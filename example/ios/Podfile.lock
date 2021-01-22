@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - RapidoReach (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - RapidoReach (from `.symlinks/plugins/RapidoReach/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  RapidoReach:
+    :path: ".symlinks/plugins/RapidoReach/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  RapidoReach: 6b712d09e867e4c0be1e5953259335b13cf7b415
+
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+
+COCOAPODS: 1.10.0
