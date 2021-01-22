@@ -2,21 +2,32 @@ PODS:
   - Flutter (1.0.0)
   - RapidoReach (0.0.1):
     - Flutter
+    - RapidoReachSDK (= 1.0.1)
+  - RapidoReachSDK (1.0.1)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - RapidoReach (from `.symlinks/plugins/RapidoReach/ios`)
+  - RapidoReachSDK (from `https://github.com/skondgekar/roriossdk.git`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
   RapidoReach:
     :path: ".symlinks/plugins/RapidoReach/ios"
+  RapidoReachSDK:
+    :git: https://github.com/skondgekar/roriossdk.git
+
+CHECKOUT OPTIONS:
+  RapidoReachSDK:
+    :commit: 7739431dc91a84f6549ca01659d5d0e5f481e94c
+    :git: https://github.com/skondgekar/roriossdk.git
 
 SPEC CHECKSUMS:
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  RapidoReach: 6b712d09e867e4c0be1e5953259335b13cf7b415
+  RapidoReach: 9d90bdf39e658cbe0f6a143822d4d2b92a4c4aa4
+  RapidoReachSDK: b35d471534354985f89fa96c3dd23e6f63dd68df
 
-PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+PODFILE CHECKSUM: e5ed3408b566d95da962c7e6ed1836b7413e7b3f
 
 COCOAPODS: 1.10.0
