@@ -3,13 +3,13 @@
 # Run `pod lib lint RapidoReach.podspec' to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'RapidoReach'
+  s.name             = 'rapidoreach'
   s.version          = '1.0.0'
   s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
   Monetize your users through rewarded surveys.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'http://rapidoreach.com'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'RapidoReach' => 'info@rapidoreach.com' }
   s.source           = { :path => '.' }

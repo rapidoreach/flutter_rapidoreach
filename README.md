@@ -14,7 +14,7 @@ The RapidoReach plugin must be initialized with a RapidoReach API Key. You can r
 First, you need to initialize the RapidoReach instance with `init` call.
 ```dart
 // Import RapidoReach package
-import 'package:RapidoReach/RapidoReach.dart';
+import 'package:rapidoreach/RapidoReach.dart';
 
 RapidoReach.instance.init(apiKey: 'YOUR_API_TOKEN', userId: 'YOUR_USER_ID')
 ```
