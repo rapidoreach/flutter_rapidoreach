@@ -42,16 +42,16 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
                 }
                 RapidoReach.shared.presentSurvey(iframeController!)
                 result(nil)
-            } else if (call.method == "onRewardCenterOpened") {
+            } else if (call.method == "setRewardCenterOpened") {
                 print("Native test  RewardCenterClosed");
                 result(0)
-            } else if (call.method == "onReward") {
+            } else if (call.method == "setOnRewardListener") {
                 let quantity = call.arguments
                 result(quantity)
-            } else if (call.method == "onRewardCenterClosed") {
+            } else if (call.method == "setRewardCenterClosed") {
                 print("Native test  RewardCenterOpened");
                 result(0)
-            } else if (call.method == "rapidoReachSurveyAvailable") {
+            } else if (call.method == "setSurveyAvaiableListener") {
                 let surveyAvailable = call.arguments
                 var survey = 0;
                 if((surveyAvailable) != nil) {

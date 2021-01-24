@@ -4,18 +4,18 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'RapidoReach'
-  s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
+  s.version          = '1.0.0'
+  s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
-A new flutter plugin project.
+  Monetize your users through rewarded surveys.
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'RapidoReach' => 'info@rapidoreach.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'RapidoReachSDK', '1.0.1'
+  s.dependency 'RapidoReachSDK', '1.0.0'
   s.platform = :ios, '8.0'
 
   # Flutter.framework does not contain a i386 slice.
