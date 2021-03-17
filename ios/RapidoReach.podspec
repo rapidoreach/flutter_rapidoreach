@@ -3,8 +3,8 @@
 # Run `pod lib lint RapidoReach.podspec' to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'rapidoreach'
-  s.version          = '1.0.0'
+  s.name             = 'RapidoReach'
+  s.version          = '1.0.2'
   s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
   Monetize your users through rewarded surveys.
@@ -15,7 +15,7 @@ Pod::Spec.new do |s|
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'RapidoReachSDK', '1.0.0'
+  s.dependency 'RapidoReachSDK', '1.0.1'
   s.platform = :ios, '8.0'
 
   # Flutter.framework does not contain a i386 slice.

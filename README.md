@@ -88,6 +88,15 @@ void onRapidoReachSurveyAvailable(int survey) {
 }
 ```
 
+### Customizing SDK options
+
+We provide several methods to customize the navigation bar to feel like your app.
+
+```
+    RapidoReach.instance.setNavBarText(text: 'Rapido Demo App');
+    RapidoReach.instance.setNavBarColor(color: '#211548');   
+    RapidoReach.instance.setNavBarTextColor(text_color: '#FFFFFF');
+```
 
 ## Following the rewarded and/or theOfferwall approach
 

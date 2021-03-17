@@ -45,9 +45,9 @@ class RapidoReach {
         .invokeMethod('setNavBarColor', <String, dynamic>{'color': color});
   }
 
-  Future<void> setNavBarTextColor({String textColor}) {
+  Future<void> setNavBarTextColor({String text_color}) {
     return _channel.invokeMethod(
-        'setNavBarTextColor', <String, dynamic>{'text_color': textColor});
+        'setNavBarTextColor', <String, dynamic>{'text_color': text_color});
   }
 
   Future _platformCallHandler(MethodCall call) async {

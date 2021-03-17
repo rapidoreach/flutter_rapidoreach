@@ -31,6 +31,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
 //               RNRapidoReach.EventEmitter.sendEvent(withName: "onRewardCenterClosed", body: nil)
                   self.onRewardCenterClosed()
                 }
+                            
                 RapidoReach.shared.configure(apiKey: apiKey as String, user: userId as String)
                 RapidoReach.shared.fetchAppUserID()
                 result(nil)
@@ -51,6 +52,18 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
             } else if (call.method == "setRewardCenterClosed") {
                 print("Native test  RewardCenterOpened");
                 result(0)
+            } else if (call.method == "setNavBarText") {
+                print("Native test  setNavigationBarText");
+                let barText = (call.arguments as! Dictionary<String, AnyObject>)["text"] as! String
+                RapidoReach.shared.setNavigationBarText(for: barText);
+            } else if (call.method == "setNavBarColor") {
+                print("Native test  setNavigationBarColor");
+                let barColor = (call.arguments as! Dictionary<String, AnyObject>)["color"] as! String
+                RapidoReach.shared.setNavigationBarColor(for: barColor);
+            } else if (call.method == "setNavBarTextColor") {
+                print("Native test  setNavigationBarTextColor");
+                let textColor = (call.arguments as! Dictionary<String, AnyObject>)["text_color"] as! String
+                RapidoReach.shared.setNavigationBarTextColor(for: textColor)
             } else if (call.method == "setSurveyAvaiableListener") {
                 let surveyAvailable = call.arguments
                 var survey = 0;
@@ -95,6 +108,21 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
     public func onRewardCenterClosed() {
       print("Native test  RewardCenterClosed");
     }
+    
+    public func setNavBarText(barText: String) {
+        print("setNavigationBarText");
+        RapidoReach.shared.setNavigationBarText(for: barText);
+    }
+    
+    public func setNavBarColor(barColor: String) {
+        print("setNavigationBarColor");
+        RapidoReach.shared.setNavigationBarColor(for: barColor);
+    }
+    
+    public func setNavBarTextColor(barTextColor: String) {
+        print("setNavigationBarTextColor");
+        RapidoReach.shared.setNavigationBarTextColor(for: barTextColor);
+    }
 
 
     func rapidoreachSurveyAvailable(available: Bool)  {
@@ -102,7 +130,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
     }
   
      func supportedEvents() -> [String]! {
-        return ["onReward", "onRewardCenterOpened", "onRewardCenterClosed", "rapidoreachSurveyAvailable"]
+        return ["onReward", "onRewardCenterOpened", "onRewardCenterClosed", "rapidoreachSurveyAvailable", "setNavBarText", "setNavBarColor", "setNavBarTextColor"]
       }
 }
 

@@ -22,6 +22,9 @@ class _MyAppState extends State<MyApp> {
         .setRewardCenterOpened(onRapidoReachRewardCenterOpened);
     RapidoReach.instance
         .setSurveyAvaiableListener(onRapidoReachSurveyAvailable);
+    RapidoReach.instance.setNavBarText(text: 'RapidoReach');
+    RapidoReach.instance.setNavBarColor(color: '#211548');   
+    RapidoReach.instance.setNavBarTextColor(text_color: '#FFFFFF');         
     super.initState();
   }
 

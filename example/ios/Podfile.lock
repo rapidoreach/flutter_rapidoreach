@@ -1,9 +1,9 @@
 PODS:
   - Flutter (1.0.0)
-  - RapidoReach (1.0.0):
+  - RapidoReach (1.0.2):
     - Flutter
-    - RapidoReachSDK (= 1.0.0)
-  - RapidoReachSDK (1.0.0)
+    - RapidoReachSDK (= 1.0.1)
+  - RapidoReachSDK (1.0.1)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -21,8 +21,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  RapidoReach: d6a9558f086514de0d48f52a448daad5d9600192
-  RapidoReachSDK: 5661c5a189bce39616c7cf498ba3d2148e42345d
+  RapidoReach: 9d979a188dffb459d76850cfebefcd57dfd932d6
+  RapidoReachSDK: 3ceda547536add2dee14bf71bf829ef1afcd9004
 
 PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
 
