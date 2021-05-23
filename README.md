@@ -2,7 +2,7 @@
 
 A plugin for [Flutter](https://flutter.io) that supports rendering surveys using [RapidoReach SDKs](https://www.rapidoreach.com/docs/).
 
-*Note*: RapidoReach iOS SDK utilizes Apple's Advertising ID (IDFA) to identify and retarget users with RapidoReach surveys. As of iOS 14 you should initialize RapidoReach Flutter plugin in iOS only if the relevant IDFA permission was granted by the user
+*Note*: RapidoReach iOS SDK utilizes Apple's Advertising ID (IDFA) to identify and retarget users with RapidoReach surveys. 
 
 ## Initializing the plugin
 
