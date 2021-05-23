@@ -3,7 +3,7 @@
 # Run `pod lib lint RapidoReach.podspec' to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'RapidoReach'
+  s.name             = 'rapidoreach'
   s.version          = '1.0.3'
   s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
