@@ -29,19 +29,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   void onRapidoReachReward(int quantity) {
-    print('TR: $quantity');
+    print('ROR: $quantity');
   }
 
   void onRapidoReachSurveyAvailable(int survey) {
-    print('TR: $survey');
+    print('ROR: $survey');
   }
 
   void onRapidoReachRewardCenterClosed() {
-    print('TR: closed');
+    print('ROR: closed');
   }
 
   void onRapidoReachRewardCenterOpened() {
-    print('TR: opened');
+    print('ROR: opened');
   }
 
   @override
