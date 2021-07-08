@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:RapidoReach/RapidoReach.dart';
+import 'package:rapidoreach/RapidoReach.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +14,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   void initState() {
-    RapidoReach.instance.init(apiToken: 'd5ece53df8ac97409298325fec81f3f7', userId: 'ANDROID_TEST_ID');
+    RapidoReach.instance.init(apiToken: 'YOUR_APP_API_KEY', userId: 'ANDROID_TEST_ID');
     RapidoReach.instance.setOnRewardListener(onRapidoReachReward);
     RapidoReach.instance
         .setRewardCenterClosed(onRapidoReachRewardCenterClosed);
