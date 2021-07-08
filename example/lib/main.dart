@@ -14,25 +14,24 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   void initState() {
-    RapidoReach.instance.init(apiToken: 'YOUR_APP_API_KEY', userId: 'ANDROID_TEST_ID');
+    RapidoReach.instance
+        .init(apiToken: 'YOUR_APP_API_KEY', userId: 'ANDROID_TEST_ID');
     RapidoReach.instance.setOnRewardListener(onRapidoReachReward);
-    RapidoReach.instance
-        .setRewardCenterClosed(onRapidoReachRewardCenterClosed);
-    RapidoReach.instance
-        .setRewardCenterOpened(onRapidoReachRewardCenterOpened);
+    RapidoReach.instance.setRewardCenterClosed(onRapidoReachRewardCenterClosed);
+    RapidoReach.instance.setRewardCenterOpened(onRapidoReachRewardCenterOpened);
     RapidoReach.instance
         .setSurveyAvaiableListener(onRapidoReachSurveyAvailable);
     RapidoReach.instance.setNavBarText(text: 'RapidoReach');
-    RapidoReach.instance.setNavBarColor(color: '#211548');   
-    RapidoReach.instance.setNavBarTextColor(text_color: '#FFFFFF');         
+    RapidoReach.instance.setNavBarColor(color: '#211548');
+    RapidoReach.instance.setNavBarTextColor(text_color: '#FFFFFF');
     super.initState();
   }
 
-  void onRapidoReachReward(int quantity) {
+  void onRapidoReachReward(int? quantity) {
     print('ROR: $quantity');
   }
 
-  void onRapidoReachSurveyAvailable(int survey) {
+  void onRapidoReachSurveyAvailable(int? survey) {
     print('ROR: $survey');
   }
 
@@ -61,8 +60,7 @@ class _MyAppState extends State<MyApp> {
             ),
             RaisedButton(
               child: Text("Launch RapidoReach Placement"),
-              onPressed: () =>
-                  RapidoReach.instance.show(),
+              onPressed: () => RapidoReach.instance.show(),
             )
           ],
         )),

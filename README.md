@@ -97,6 +97,43 @@ We provide several methods to customize the navigation bar to feel like your app
     RapidoReach.instance.setNavBarColor(color: '#211548');   
     RapidoReach.instance.setNavBarTextColor(text_color: '#FFFFFF');
 ```
+### Debuging
+
+If in case you get multidex issues
+
+This is how you can enable multidex for your flutter project.
+
+Enable multidex.
+Open [project_folder]/app/build.gradle and add following lines.
+
+```dart
+defaultConfig {
+    ...
+
+    multiDexEnabled true
+}
+```
+
+and
+
+(optional or if required)
+
+```dart
+dependencies {
+    ...
+
+    implementation 'com.android.support:multidex:1.0.3'
+}
+```
+
+Or if you are facing null safety related issues
+
+try this
+
+```dart
+flutter run --no-sound-null-safety
+```
+
 
 ## Following the rewarded and/or theOfferwall approach
 

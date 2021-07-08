@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'rapidoreach'
-  s.version          = '1.0.5'
+  s.version          = '1.0.8'
   s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
   Monetize your users through rewarded surveys.
