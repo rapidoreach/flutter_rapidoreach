@@ -1,4 +1,4 @@
-name: RapidoReach_example
+name: rapidoreach_example
 description: Demonstrates how to use the RapidoReach plugin.
 
 # The following line prevents the package from being accidentally published to
@@ -22,11 +22,12 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.0
+  flutter_pollfish: ^4.0.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^1.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

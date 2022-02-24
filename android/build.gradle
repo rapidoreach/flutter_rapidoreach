@@ -4,19 +4,17 @@ version '1.0'
 buildscript {
     repositories {
         google()
-        jcenter()
         mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.1'
+        classpath 'com.android.tools.build:gradle:7.1.1'
     }
 }
 
 rootProject.allprojects {
     repositories {
         google()
-        jcenter()
         maven { url 'https://jitpack.io' }
     }
 }
@@ -24,20 +22,19 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 31
 
     defaultConfig {
         minSdkVersion 16
-        multiDexEnabled true
     }
     lintOptions {
         disable 'InvalidPackage'
     }
     dependencies {
-//        implementation 'com.google.android.gms:play-services-ads:15.0.0'
-//        implementation files('libs/RapidoReach-1.0.0.aar')
-        implementation 'com.github.vikash766:cbofferwallsdk:1.0.0'
-        implementation 'androidx.appcompat:appcompat:1.2.0'
-//        implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.github.arnavvaryani:cbofferwallsdk:-SNAPSHOT'
     }
 }
+
+
+
+

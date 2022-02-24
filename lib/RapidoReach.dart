@@ -1,10 +1,10 @@
-import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-typedef void OnRewardListener(int? quantity);
-typedef void SurveyAvailableListener(int? survey);
-typedef void RewardCenterOpenedListener();
-typedef void RewardCenterClosedListener();
+typedef OnRewardListener = void Function(int? quantity);
+typedef SurveyAvailableListener = void Function(int? survey);
+typedef RewardCenterOpenedListener = void Function();
+typedef RewardCenterClosedListener = void Function();
 
 class RapidoReach {
   static RapidoReach get instance => _instance;
@@ -45,13 +45,13 @@ class RapidoReach {
         .invokeMethod('setNavBarColor', <String, dynamic>{'color': color});
   }
 
-  Future<void> setNavBarTextColor({String? text_color}) {
+  Future<void> setNavBarTextColor({String? textColor}) {
     return _channel.invokeMethod(
-        'setNavBarTextColor', <String, dynamic>{'text_color': text_color});
+        'setNavBarTextColor', <String, dynamic>{'text_color': textColor});
   }
 
   Future _platformCallHandler(MethodCall call) async {
-    print(
+    debugPrint(
         "RapidoReach _platformCallHandler call ${call.method} ${call.arguments}");
 
     switch (call.method) {
@@ -71,7 +71,7 @@ class RapidoReach {
         _rewardCenterClosedListener!();
         break;
       default:
-        print('Unknown method ${call.method}');
+        debugPrint('Unknown method ${call.method}');
     }
   }
 
