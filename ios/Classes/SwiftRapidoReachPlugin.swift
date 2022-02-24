@@ -23,11 +23,11 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
                   self.rapidoreachSurveyAvailable(available: available)
                 }
                 RapidoReach.shared.setrewardCenterOpenedCallback {
-                  print("Reward centre opened")
+                  print("Reward center opened")
                   self.onRewardCenterOpened()
                 }
                 RapidoReach.shared.setrewardCenterClosedCallback {
-                  print("Reward centre closed" );
+                  print("Reward center closed" );
 //               RNRapidoReach.EventEmitter.sendEvent(withName: "onRewardCenterClosed", body: nil)
                   self.onRewardCenterClosed()
                 }
