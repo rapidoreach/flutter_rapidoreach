@@ -31,7 +31,7 @@ android {
         disable 'InvalidPackage'
     }
     dependencies {
-    implementation 'com.github.arnavvaryani:cbofferwallsdk:-SNAPSHOT'
+    implementation 'com.github.vikash766:cbofferwallsdk:1.0.4'
     }
 }
 

@@ -4,7 +4,7 @@ PODS:
     - Flutter
     - Pollfish (~> 6.2.3)
   - Pollfish (6.2.3)
-  - rapidoreach (1.0.8):
+  - rapidoreach (1.0.9):
     - Flutter
     - RapidoReachSDK (= 1.0.2)
   - RapidoReachSDK (1.0.2)
