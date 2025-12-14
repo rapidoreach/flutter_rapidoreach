@@ -15,6 +15,9 @@ jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
+    env:
+      # Prevent Gradle/Jetifier OOMs on GitHub runners.
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
     steps:
       - name: Checkout
         uses: actions/checkout@v4
