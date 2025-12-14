@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'rapidoreach'
-  s.version          = '1.0.9'
+  s.version          = '1.1.0'
   s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
   Monetize your users through rewarded surveys.
@@ -15,10 +15,13 @@ Pod::Spec.new do |s|
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'RapidoReachSDK', '1.0.2'
-  s.platform = :ios, '8.0'
+  s.frameworks = 'UIKit', 'WebKit', 'AdSupport', 'CoreTelephony'
+  s.platform = :ios, '12.0'
 
   # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386'
+  }
   s.swift_version = '5.0'
 end

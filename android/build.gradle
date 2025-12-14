@@ -1,6 +1,8 @@
 group 'com.rapidoreach.RapidoReach'
 version '1.0'
 
+def rapidoreachLocalMavenRepo = file("$projectDir/maven")
+
 buildscript {
     repositories {
         google()
@@ -8,33 +10,52 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.1'
+        classpath 'com.android.tools.build:gradle:8.6.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0"
     }
 }
 
 rootProject.allprojects {
     repositories {
         google()
+        mavenCentral()
         maven { url 'https://jitpack.io' }
+        maven { url rapidoreachLocalMavenRepo }
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 31
+    namespace 'com.rapidoreach.RapidoReach'
+    compileSdkVersion 35
+    ndkVersion "25.1.8937393"
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 23
     }
-    lintOptions {
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    lint {
         disable 'InvalidPackage'
-    }
-    dependencies {
-    implementation 'com.github.vikash766:cbofferwallsdk:1.0.4'
     }
 }
 
-
-
-
+dependencies {
+    implementation 'com.rapidoreach:cbofferwallsdk:1.1.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.lifecycle:lifecycle-process:2.6.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0'
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
+    implementation 'com.google.android.gms:play-services-appset:16.1.0'
+}
