@@ -1,6 +1,6 @@
 PODS:
   - Flutter (1.0.0)
-  - rapidoreach (2.0.0):
+  - rapidoreach (1.1.0):
     - Flutter
 
 DEPENDENCIES:
@@ -15,7 +15,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  rapidoreach: 48412b13b5a21b2465ead3ae33414dc7be8d78a0
+  rapidoreach: 619f57456bf3a090edcb48c8e833bc5c3aa9e6cf
 
 PODFILE CHECKSUM: cc1f88378b4bfcf93a6ce00d2c587857c6008d3b
 
