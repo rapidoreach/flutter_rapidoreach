@@ -16,7 +16,7 @@ First, you need to initialize the RapidoReach instance with `init` call.
 // Import RapidoReach package
 import 'package:rapidoreach/RapidoReach.dart';
 
-RapidoReach.instance.init(apiKey: 'YOUR_API_TOKEN', userId: 'YOUR_USER_ID')
+RapidoReach.instance.init(apiToken: 'YOUR_API_TOKEN', userId: 'YOUR_USER_ID')
 ```
 
 ### Reward Center
@@ -95,7 +95,7 @@ We provide several methods to customize the navigation bar to feel like your app
 ```
     RapidoReach.instance.setNavBarText(text: 'Rapido Demo App');
     RapidoReach.instance.setNavBarColor(color: '#211548');   
-    RapidoReach.instance.setNavBarTextColor(text_color: '#FFFFFF');
+    RapidoReach.instance.setNavBarTextColor(textColor: '#FFFFFF');
 ```
 ### Debuging
 
@@ -126,15 +126,6 @@ dependencies {
 }
 ```
 
-Or if you are facing null safety related issues
-
-try this
-
-```dart
-flutter run --no-sound-null-safety
-```
-
-
 ## Following the rewarded and/or theOfferwall approach
 
 An example is provided on [Github](https://github.com/rapidoreach/flutter_rapidoreach) that demonstrates how a publisher can implement the rewarded and/or the Offerwall approach. Upon survey completion, the publisher can reward the user.
@@ -147,7 +138,9 @@ limitations:
 
 - You cannot pass custom attributes during initialization
 - No tests implemented yet
-- Minimum iOS is 9.0 and minimum Android version is 16
+- Minimum iOS is 12.0 and minimum Android version is 23
+- Dart SDK is `^3.8.0`
+- iOS native SDK sources are vendored into this plugin (based on `RapidoReach` `v1.0.7`)
 
 For other RapidoReach products, see
 [RapidoReach docs](https://www.rapidoreach.com/docs).

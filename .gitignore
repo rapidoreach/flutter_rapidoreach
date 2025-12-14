@@ -5,3 +5,7 @@
 .pub/
 
 build/
+
+# Flutter iOS generated files
+example/ios/Flutter/ephemeral/
+example/ios/Pods/

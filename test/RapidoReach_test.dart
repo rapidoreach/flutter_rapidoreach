@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 
 void main() {
-  const MethodChannel channel = MethodChannel('RapidoReach');
+  const MethodChannel channel = MethodChannel('rapidoreach');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 

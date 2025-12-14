@@ -8,33 +8,46 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.1'
+        classpath 'com.android.tools.build:gradle:8.2.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
     }
 }
 
 rootProject.allprojects {
     repositories {
         google()
+        mavenCentral()
         maven { url 'https://jitpack.io' }
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 31
+    namespace 'com.rapidoreach.RapidoReach'
+    compileSdkVersion 35
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 23
     }
-    lintOptions {
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    lint {
         disable 'InvalidPackage'
-    }
-    dependencies {
-    implementation 'com.github.vikash766:cbofferwallsdk:1.0.4'
     }
 }
 
-
+dependencies {
+    implementation 'com.rapidoreach:cbofferwallsdk:1.1.0'
+}
 
 

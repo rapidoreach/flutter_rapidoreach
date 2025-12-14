@@ -1,171 +1,482 @@
 import Flutter
-import RapidoReachSDK
+import Foundation
+import SafariServices
 import UIKit
 
 @objc(SwiftRapidoReachPlugin)
 public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
+  private var channel: FlutterMethodChannel?
+  private var surveyAvailability: Bool = false
+  private var configuredApiKey: String?
+  private var configuredUserId: String?
+  private var networkLoggingEnabled: Bool = false
+  private var previousLoggerSink: ((RapidoReachLogLevel, String) -> Void)?
+  private var previousLoggerLevel: RapidoReachLogLevel?
+
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "rapidoreach", binaryMessenger: registrar.messenger())
     let instance = SwiftRapidoReachPlugin()
+    instance.channel = channel
     registrar.addMethodCallDelegate(instance, channel: channel)
   }
 
-    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-            if call.method == "init" {
-                let apiKey = (call.arguments as! Dictionary<String, AnyObject>)["api_token"] as! String
-                let userId = (call.arguments as! Dictionary<String, AnyObject>)["user_id"] as! String
-                RapidoReach.shared.setRewardCallback { (reward:Int) in
-                  print("%d REWARD", reward, apiKey, userId);
-                  self.onReward(reward: reward)
-                }
-                RapidoReach.shared.setsurveysAvailableCallback { (available:Bool) in
-                  print("Rapido Reach Survey Available" );
-                  self.rapidoreachSurveyAvailable(available: available)
-                }
-                RapidoReach.shared.setrewardCenterOpenedCallback {
-                  print("Reward center opened")
-                  self.onRewardCenterOpened()
-                }
-                RapidoReach.shared.setrewardCenterClosedCallback {
-                  print("Reward center closed" );
-//               RNRapidoReach.EventEmitter.sendEvent(withName: "onRewardCenterClosed", body: nil)
-                  self.onRewardCenterClosed()
-                }
-                            
-                RapidoReach.shared.configure(apiKey: apiKey as String, user: userId as String)
-                RapidoReach.shared.fetchAppUserID()
-                result(nil)
-            } else if (call.method == "show") {
-                // we do not keep track of old callbacks on iOS, so nothing to do here
-                let iframeController = topMostController()
-                if(iframeController == nil) {
-                  return
-                }
-                RapidoReach.shared.presentSurvey(iframeController!)
-                result(nil)
-            } else if (call.method == "setRewardCenterOpened") {
-                print("Native test  RewardCenterClosed");
-                result(0)
-            } else if (call.method == "setOnRewardListener") {
-                let quantity = call.arguments
-                result(quantity)
-            } else if (call.method == "setRewardCenterClosed") {
-                print("Native test  RewardCenterOpened");
-                result(0)
-            } else if (call.method == "setNavBarText") {
-                print("Native test  setNavigationBarText");
-                let barText = (call.arguments as! Dictionary<String, AnyObject>)["text"] as! String
-                RapidoReach.shared.setNavigationBarText(for: barText);
-            } else if (call.method == "setNavBarColor") {
-                print("Native test  setNavigationBarColor");
-                let barColor = (call.arguments as! Dictionary<String, AnyObject>)["color"] as! String
-                RapidoReach.shared.setNavigationBarColor(for: barColor);
-            } else if (call.method == "setNavBarTextColor") {
-                print("Native test  setNavigationBarTextColor");
-                let textColor = (call.arguments as! Dictionary<String, AnyObject>)["text_color"] as! String
-                RapidoReach.shared.setNavigationBarTextColor(for: textColor)
-            } else if (call.method == "setSurveyAvaiableListener") {
-                let surveyAvailable = call.arguments
-                var survey = 0;
-                if((surveyAvailable) != nil) {
-                   survey = 1;
-                } else if ((surveyAvailable == nil)) {
-                  survey = 0;
-               }
-                result(survey)
-            }
-            else {
-                result(FlutterMethodNotImplemented)
-            }
-        }
-
-    func topMostController() -> UIViewController? {
-        guard let window = UIApplication.shared.keyWindow, let rootViewController = window.rootViewController else {
-            return nil
-        }
-
-        var topController = rootViewController
-
-        while let newTopController = topController.presentedViewController {
-            topController = newTopController
-        }
-
-        return topController
-    }
-
-    public func showRewardCenter(_ call: FlutterMethodCall, result: @escaping FlutterResult) -> Void {
-      
-      
-    }
-
-    public func onReward(reward: Int) {
-    }
-
-    public func onRewardCenterOpened()  {
-      print("Native test  RewardCenterOpened");
-    }
-
-    public func onRewardCenterClosed() {
-      print("Native test  RewardCenterClosed");
-    }
-    
-    public func setNavBarText(barText: String) {
-        print("setNavigationBarText");
-        RapidoReach.shared.setNavigationBarText(for: barText);
-    }
-    
-    public func setNavBarColor(barColor: String) {
-        print("setNavigationBarColor");
-        RapidoReach.shared.setNavigationBarColor(for: barColor);
-    }
-    
-    public func setNavBarTextColor(barTextColor: String) {
-        print("setNavigationBarTextColor");
-        RapidoReach.shared.setNavigationBarTextColor(for: barTextColor);
-    }
-
-
-    func rapidoreachSurveyAvailable(available: Bool)  {
-        print("Native test  rapidoreachSurveyAvailable");
-    }
-  
-     func supportedEvents() -> [String]! {
-        return ["onReward", "onRewardCenterOpened", "onRewardCenterClosed", "rapidoreachSurveyAvailable", "setNavBarText", "setNavBarColor", "setNavBarTextColor"]
+  public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "init":
+      guard let args = call.arguments as? [String: Any],
+            let apiKey = args["api_token"] as? String,
+            !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            let userId = args["user_id"] as? String,
+            !userId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        result(FlutterError(code: "invalid_args", message: "api_token and user_id are required", details: nil))
+        return
       }
-}
 
+      configuredApiKey = apiKey
+      configuredUserId = userId
 
-extension SwiftRapidoReachPlugin: RapidoReachDelegate {
-    public func didSurveyAvailable(_ available: Bool) {
-        
+      RapidoReach.shared.setRewardCallback { [weak self] (reward: Int) in
+        self?.sendEvent("onReward", arguments: reward)
+      }
+      RapidoReach.shared.setsurveysAvailableCallback { [weak self] (available: Bool) in
+        self?.surveyAvailability = available
+        let value = available ? 1 : 0
+        self?.sendEvent("rapidoReachSurveyAvailable", arguments: value)
+        self?.sendEvent("rapidoreachSurveyAvailable", arguments: value)
+      }
+      RapidoReach.shared.setrewardCenterOpenedCallback { [weak self] in
+        self?.sendEvent("onRewardCenterOpened", arguments: 0)
+      }
+      RapidoReach.shared.setrewardCenterClosedCallback { [weak self] in
+        self?.sendEvent("onRewardCenterClosed", arguments: 0)
+      }
+
+      RapidoReach.shared.configure(apiKey: apiKey, user: userId)
+      RapidoReach.shared.fetchAppUserID()
+      result(nil)
+
+    case "show":
+      RapidoReach.shared.presentSurvey()
+      result(nil)
+
+    case "showRewardCenter":
+      RapidoReach.shared.presentSurvey()
+      result(nil)
+
+    case "setUserIdentifier":
+      guard let args = call.arguments as? [String: Any],
+            let userId = args["user_id"] as? String,
+            !userId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        result(FlutterError(code: "invalid_args", message: "user_id is required", details: nil))
+        return
+      }
+      configuredUserId = userId
+      RapidoReach.shared.setUserIdentifier(userId)
+      result(nil)
+
+    case "setNavBarText":
+      guard let args = call.arguments as? [String: Any],
+            let text = args["text"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "text is required", details: nil))
+        return
+      }
+      RapidoReach.shared.setNavigationBarText(for: text)
+      result(nil)
+
+    case "setNavBarColor":
+      guard let args = call.arguments as? [String: Any],
+            let color = args["color"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "color is required", details: nil))
+        return
+      }
+      RapidoReach.shared.setNavigationBarColor(for: color)
+      result(nil)
+
+    case "setNavBarTextColor":
+      guard let args = call.arguments as? [String: Any],
+            let textColor = args["text_color"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "text_color is required", details: nil))
+        return
+      }
+      RapidoReach.shared.setNavigationBarTextColor(for: textColor)
+      result(nil)
+
+    case "enableNetworkLogging":
+      guard let args = call.arguments as? [String: Any],
+            let enabled = args["enabled"] as? Bool else {
+        result(FlutterError(code: "invalid_args", message: "enabled is required", details: nil))
+        return
+      }
+      enableNetworkLogging(enabled)
+      result(nil)
+
+    case "getBaseUrl":
+      result(RapidoReachConfiguration.shared.baseURL.absoluteString)
+
+    case "updateBackend":
+      guard let args = call.arguments as? [String: Any],
+            let baseURL = args["baseURL"] as? String,
+            let url = URL(string: baseURL) else {
+        result(FlutterError(code: "invalid_args", message: "baseURL is required", details: nil))
+        return
+      }
+      RapidoReach.shared.updateBackend(baseURL: url, rewardHashSalt: (args["rewardHashSalt"] as? String))
+      emitNetworkLog(name: "updateBackend", method: "CONFIG", url: baseURL)
+      result(nil)
+
+    case "isSurveyAvailable":
+      result(surveyAvailability)
+
+    case "sendUserAttributes":
+      guard let args = call.arguments as? [String: Any],
+            let attributes = args["attributes"] as? [String: Any] else {
+        result(FlutterError(code: "invalid_args", message: "attributes is required", details: nil))
+        return
+      }
+      let clearPrevious = args["clear_previous"] as? Bool ?? false
+      let url = buildUrl(path: "/api/sdk/v2/user_attributes")
+      var requestPayload = authBodyFields()
+      requestPayload["attributes"] = attributes
+      requestPayload["clear_previous"] = clearPrevious
+      RapidoReach.shared.sendUserAttributes(attributes, clearPrevious: clearPrevious) { [weak self] error in
+        if let error = error {
+          self?.emitNetworkLog(
+            name: "sendUserAttributes",
+            method: "POST",
+            url: url,
+            requestBody: requestPayload,
+            error: error
+          )
+          result(FlutterError(code: "send_user_attributes_error", message: error.localizedDescription, details: nil))
+        } else {
+          self?.emitNetworkLog(
+            name: "sendUserAttributes",
+            method: "POST",
+            url: url,
+            requestBody: requestPayload,
+            responseBody: ["status": "success"]
+          )
+          result(nil)
+        }
+      }
+
+    case "getPlacementDetails":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/details", queryItems: authQueryItems())
+      RapidoReach.shared.getPlacementDetails(tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let payload):
+          self?.emitNetworkLog(name: "getPlacementDetails", method: "GET", url: url, responseBody: payload)
+          result(payload)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "getPlacementDetails", method: "GET", url: url, error: error)
+          result(FlutterError(code: "placement_details_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "listSurveys":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/surveys", queryItems: authQueryItems())
+      RapidoReach.shared.listSurveys(tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let list):
+          self?.emitNetworkLog(name: "listSurveys", method: "GET", url: url, responseBody: list)
+          result(list)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "listSurveys", method: "GET", url: url, error: error)
+          result(FlutterError(code: "list_surveys_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "hasSurveys":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/surveys", queryItems: authQueryItems())
+      RapidoReach.shared.hasSurveys(tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let available):
+          self?.emitNetworkLog(name: "hasSurveys", method: "GET", url: url, responseBody: ["hasSurveys": available])
+          result(available)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "hasSurveys", method: "GET", url: url, error: error)
+          result(FlutterError(code: "has_surveys_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "canShowContent":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/can_show", queryItems: authQueryItems())
+      RapidoReach.shared.canShowContent(tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let canShow):
+          self?.emitNetworkLog(name: "canShowContent", method: "GET", url: url, responseBody: ["canShow": canShow])
+          result(canShow)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "canShowContent", method: "GET", url: url, error: error)
+          result(FlutterError(code: "can_show_content_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "canShowSurvey":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String,
+            let surveyId = args["surveyId"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag and surveyId are required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/surveys/\(surveyId)/can_show", queryItems: authQueryItems())
+      RapidoReach.shared.canShowSurvey(surveyId: surveyId, tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let canShow):
+          self?.emitNetworkLog(name: "canShowSurvey", method: "GET", url: url, responseBody: ["canShow": canShow])
+          result(canShow)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "canShowSurvey", method: "GET", url: url, error: error)
+          result(FlutterError(code: "can_show_survey_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "showSurvey":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String,
+            let surveyId = args["surveyId"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag and surveyId are required", details: nil))
+        return
+      }
+      let customParams = args["customParams"] as? [String: Any]
+      let requestUrl = buildUrl(path: "/api/sdk/v2/placements/\(tag)/surveys/\(surveyId)/show")
+      var requestPayload = authBodyFields()
+      if let customParams { requestPayload["custom_params"] = customParams }
+      RapidoReach.shared.showSurvey(surveyId: surveyId, tag: tag, customParameters: customParams) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let url):
+          self?.emitNetworkLog(
+            name: "showSurvey",
+            method: "POST",
+            url: requestUrl,
+            requestBody: requestPayload,
+            responseBody: ["surveyEntryUrl": url.absoluteString]
+          )
+          guard let presenter = self?.topMostController() else {
+            result(nil)
+            return
+          }
+          DispatchQueue.main.async {
+            let controller = SFSafariViewController(url: url)
+            presenter.present(controller, animated: true) {
+              result(nil)
+            }
+          }
+        case .failure(let error):
+          self?.emitNetworkLog(name: "showSurvey", method: "POST", url: requestUrl, requestBody: requestPayload, error: error)
+          result(FlutterError(code: "show_survey_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "fetchQuickQuestions":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/quick_questions", queryItems: authQueryItems())
+      RapidoReach.shared.fetchQuickQuestions(tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let payload):
+          self?.emitNetworkLog(name: "fetchQuickQuestions", method: "GET", url: url, responseBody: payload)
+          result(payload)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "fetchQuickQuestions", method: "GET", url: url, error: error)
+          result(FlutterError(code: "fetch_quick_questions_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "hasQuickQuestions":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String else {
+        result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/quick_questions", queryItems: authQueryItems())
+      RapidoReach.shared.hasQuickQuestions(tag: tag) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let hasQuestions):
+          self?.emitNetworkLog(name: "hasQuickQuestions", method: "GET", url: url, responseBody: ["hasQuickQuestions": hasQuestions])
+          result(hasQuestions)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "hasQuickQuestions", method: "GET", url: url, error: error)
+          result(FlutterError(code: "has_quick_questions_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    case "answerQuickQuestion":
+      guard let args = call.arguments as? [String: Any],
+            let tag = args["tag"] as? String,
+            let questionId = args["questionId"] as? String,
+            let answer = args["answer"] else {
+        result(FlutterError(code: "invalid_args", message: "tag, questionId, and answer are required", details: nil))
+        return
+      }
+      let url = buildUrl(path: "/api/sdk/v2/placements/\(tag)/quick_questions/\(questionId)/answer")
+      var requestPayload = authBodyFields()
+      requestPayload["answer"] = answer
+      RapidoReach.shared.answerQuickQuestion(id: questionId, placement: tag, answer: answer) { [weak self] sdkResult in
+        switch sdkResult {
+        case .success(let payload):
+          self?.emitNetworkLog(name: "answerQuickQuestion", method: "POST", url: url, requestBody: requestPayload, responseBody: payload)
+          result(payload)
+        case .failure(let error):
+          self?.emitNetworkLog(name: "answerQuickQuestion", method: "POST", url: url, requestBody: requestPayload, error: error)
+          result(FlutterError(code: "answer_quick_question_error", message: error.localizedDescription, details: nil))
+        }
+      }
+
+    default:
+      result(FlutterMethodNotImplemented)
+    }
   }
 
-  func didFinishSurvey() {
-    
+  private func enableNetworkLogging(_ enabled: Bool) {
+    if enabled == networkLoggingEnabled {
+      return
+    }
+
+    networkLoggingEnabled = enabled
+
+    if enabled {
+      previousLoggerSink = RapidoReachLogger.shared.sink
+      previousLoggerLevel = RapidoReachLogger.shared.level
+      RapidoReachLogger.shared.level = .debug
+      RapidoReachLogger.shared.sink = { [weak self] level, line in
+        self?.previousLoggerSink?(level, line)
+        self?.emitNetworkLog(
+          name: "RapidoReachLogger",
+          method: "LOG",
+          url: nil,
+          requestBody: line
+        )
+      }
+    } else {
+      RapidoReachLogger.shared.sink = previousLoggerSink
+      if let previousLoggerLevel {
+        RapidoReachLogger.shared.level = previousLoggerLevel
+      }
+      previousLoggerSink = nil
+      previousLoggerLevel = nil
+    }
   }
-  
-  func didCancelSurvey() {
-    
+
+  private func rootViewControllerFromActiveScene() -> UIViewController? {
+    if #available(iOS 13.0, *) {
+      return UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .flatMap { $0.windows }
+        .first { $0.isKeyWindow }?
+        .rootViewController
+    }
+    return UIApplication.shared.keyWindow?.rootViewController
   }
-  
-    public func didGetError(_ error: RapidoReachError) {
-    
+
+  private func topMostController(root: UIViewController? = nil) -> UIViewController? {
+    let rootController = root ?? rootViewControllerFromActiveScene()
+    if let nav = rootController as? UINavigationController {
+      return topMostController(root: nav.visibleViewController)
+    }
+    if let tab = rootController as? UITabBarController {
+      return topMostController(root: tab.selectedViewController)
+    }
+    if let presented = rootController?.presentedViewController {
+      return topMostController(root: presented)
+    }
+    return rootController
   }
-  
-  func didGetAppUser(_ user: RapidoReachUser) {
-    
+
+  private func stringifyForLog(_ value: Any?) -> String? {
+    guard let value else { return nil }
+    if let string = value as? String { return string }
+    if JSONSerialization.isValidJSONObject(value),
+       let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted]),
+       let text = String(data: data, encoding: .utf8) {
+      return text
+    }
+    return String(describing: value)
   }
-  
-    public func didGetRewards(_ reward: RapidoReachReward) {
-    
+
+  private func authQueryItems() -> [URLQueryItem]? {
+    var items: [URLQueryItem] = []
+    if let configuredApiKey {
+      items.append(URLQueryItem(name: "api_key", value: configuredApiKey))
+    }
+    if let configuredUserId {
+      items.append(URLQueryItem(name: "sdk_user_id", value: configuredUserId))
+    }
+    return items.isEmpty ? nil : items
   }
-  
-    public func didOpenRewardCenter() {
-    
+
+  private func authBodyFields() -> [String: Any] {
+    var fields: [String: Any] = [:]
+    if let configuredApiKey {
+      fields["api_key"] = configuredApiKey
+    }
+    if let configuredUserId {
+      fields["sdk_user_id"] = configuredUserId
+    }
+    return fields
   }
-  
-    public func didClosedRewardCenter() {
-    
+
+  private func buildUrl(path: String, queryItems: [URLQueryItem]? = nil) -> String? {
+    guard var components = URLComponents(
+      url: RapidoReachConfiguration.shared.baseURL,
+      resolvingAgainstBaseURL: false
+    ) else {
+      return nil
+    }
+    components.path = path
+    components.queryItems = queryItems
+    return components.url?.absoluteString
   }
-  
+
+  private func emitNetworkLog(
+    name: String,
+    method: String,
+    url: String?,
+    requestBody: Any? = nil,
+    responseBody: Any? = nil,
+    error: Error? = nil
+  ) {
+    guard networkLoggingEnabled else { return }
+
+    var payload: [String: Any] = [
+      "name": name,
+      "method": method,
+      "timestampMs": Int(Date().timeIntervalSince1970 * 1000),
+    ]
+    if let url { payload["url"] = url }
+    if let requestBody = stringifyForLog(requestBody) { payload["requestBody"] = requestBody }
+    if let responseBody = stringifyForLog(responseBody) { payload["responseBody"] = responseBody }
+    if let error { payload["error"] = error.localizedDescription }
+
+    sendEvent("rapidoreachNetworkLog", arguments: payload)
+  }
+
+  private func sendEvent(_ method: String, arguments: Any?) {
+    DispatchQueue.main.async { [weak self] in
+      self?.channel?.invokeMethod(method, arguments: arguments)
+    }
+  }
 }

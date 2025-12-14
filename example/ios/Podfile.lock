@@ -1,39 +1,22 @@
 PODS:
   - Flutter (1.0.0)
-  - flutter_pollfish (4.0.1):
+  - rapidoreach (2.0.0):
     - Flutter
-    - Pollfish (~> 6.2.3)
-  - Pollfish (6.2.3)
-  - rapidoreach (1.0.9):
-    - Flutter
-    - RapidoReachSDK (= 1.0.2)
-  - RapidoReachSDK (1.0.2)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
-  - flutter_pollfish (from `.symlinks/plugins/flutter_pollfish/ios`)
   - rapidoreach (from `.symlinks/plugins/rapidoreach/ios`)
-
-SPEC REPOS:
-  trunk:
-    - Pollfish
-    - RapidoReachSDK
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
-  flutter_pollfish:
-    :path: ".symlinks/plugins/flutter_pollfish/ios"
   rapidoreach:
     :path: ".symlinks/plugins/rapidoreach/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
-  flutter_pollfish: 7a9227bc41e0adb0255585389cb112279368a33f
-  Pollfish: 5a9257bf4a3090cd8af1f1591c01f096d5526044
-  rapidoreach: 0cf211cf03242429afb4f1a8c3e95b0d3e88efa1
-  RapidoReachSDK: f3785243d5aef385e32b867e43a31c3720313b56
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  rapidoreach: 48412b13b5a21b2465ead3ae33414dc7be8d78a0
 
-PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+PODFILE CHECKSUM: cc1f88378b4bfcf93a6ce00d2c587857c6008d3b
 
-COCOAPODS: 1.11.2
+COCOAPODS: 1.16.2
