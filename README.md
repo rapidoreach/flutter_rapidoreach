@@ -18,7 +18,7 @@ Sign up for a developer account, create an app in the RapidoReach dashboard, and
 Notes:
 - iOS uses `AdSupport` / `CoreTelephony` / `WebKit`. If you use IDFA, implement App Tracking Transparency (ATT) in your app and include `NSUserTrackingUsageDescription` in your iOS `Info.plist`.
 - This plugin vendors the native SDKs:
-  - iOS sources are included in `ios/Classes/RapidoReach` (based on `RapidoReach` `v1.0.7`).
+  - iOS sources are included in `ios/Classes/RapidoReach` (based on `RapidoReach` `v1.0.8`).
   - Android SDK is included as a bundled AAR under `android/maven` (based on `cbofferwallsdk` `1.1.0`).
 
 ## Installation
@@ -27,7 +27,7 @@ Add the dependency:
 
 ```yaml
 dependencies:
-  rapidoreach: ^2.0.1
+  rapidoreach: ^1.1.0
 ```
 
 Then run:
@@ -39,7 +39,7 @@ Then run:
 ### Import
 
 ```dart
-import 'package:rapidoreach/RapidoReach.dart';
+import 'package:rapidoreach/rapidoreach.dart';
 ```
 
 ### Initialize (required)
@@ -59,28 +59,18 @@ await RapidoReach.instance.init(
 await RapidoReach.instance.showRewardCenter();
 ```
 
-## Error handling (recommended)
+### Survey availability (simple check)
 
-Most APIs return `Future`s and can throw.
-
-- Dart-side integration mistakes throw `StateError` (e.g., calling a method before `init`).
-- Native failures typically throw `PlatformException` with a `code` and `message`.
-
-Common error codes:
-- `not_initialized`: call and await `init` first
-- `no_activity` (Android): call from a foreground Activity (don’t call from a background isolate)
-- `no_presenter` (iOS): no active `UIViewController` available to present UI
-
-Example:
+If you want a quick “should I show the offerwall?” check:
 
 ```dart
-try {
+final available = await RapidoReach.instance.isSurveyAvailable();
+if (available) {
   await RapidoReach.instance.showRewardCenter();
-} catch (e) {
-  // show a toast/snackbar in debug builds
-  // print('$e');
 }
 ```
+
+Tip: for more control and better UX, prefer the placement-based APIs (`canShowContent`, `listSurveys`, `showSurvey`).
 
 ## Events (rewards, lifecycle, survey availability, errors)
 
@@ -133,6 +123,14 @@ await RapidoReach.instance.setNavBarColor(color: '#211548');
 await RapidoReach.instance.setNavBarTextColor(textColor: '#FFFFFF');
 ```
 
+## User identity
+
+If your user logs in/out, you can update the user identifier (after `init`):
+
+```dart
+await RapidoReach.instance.setUserIdentifier(userId: 'NEW_USER_ID');
+```
+
 ## Placement-based flows (recommended)
 
 If you use multiple placements or want a guided UX, query placement state and show a specific survey:
@@ -161,6 +159,14 @@ Placement helpers:
 - `canShowSurvey(tag, surveyId)`
 - `showSurvey(tag, surveyId, customParams?)`
 
+## Legacy offerwall API
+
+`show()` is a legacy alias for showing the reward center, with an optional `placementID`:
+
+```dart
+await RapidoReach.instance.show(placementID: 'PLACEMENT_ID'); // optional
+```
+
 ## Quick Questions
 
 ```dart
@@ -188,34 +194,17 @@ await RapidoReach.instance.sendUserAttributes(
 );
 ```
 
-## Backends / environments
-
-If you use a staging/regional backend, configure it via:
-
-```dart
-await RapidoReach.instance.updateBackend(
-  baseURL: 'https://your-backend.example',
-  rewardHashSalt: null,
-);
-```
-
 ## Network logging (debug)
 
-Enable network logs (helpful during QA) and subscribe:
+To stream SDK network events into Flutter, enable logging and listen for `rapidoreachNetworkLog`:
 
 ```dart
-RapidoReach.instance.setNetworkLogListener((payload) {
-  // payload: { name, method, url?, requestBody?, responseBody?, error?, timestampMs }
-  // print(payload);
+RapidoReach.instance.setNetworkLogListener((entry) {
+  // { name, method, url, requestBody?, responseBody?, error?, timestampMs }
+  debugPrint('RR net: $entry');
 });
 
 await RapidoReach.instance.enableNetworkLogging(enabled: true);
-```
-
-You can also read the configured base URL:
-
-```dart
-final baseUrl = await RapidoReach.instance.getBaseUrl();
 ```
 
 ## Android multidex (only if you hit dex limits)
@@ -250,6 +239,27 @@ Run it locally:
 
 `cd example && flutter run`
 
-## Publishing to pub.dev (CI)
 
-This repo includes a GitHub Actions workflow at `.github/workflows/pubdev-publish.yml` that builds/tests the plugin + example and publishes to pub.dev on tags like `v2.0.1`.
+
+## Error handling (recommended & optional)
+
+Most APIs return `Future`s and can throw.
+
+- Dart-side integration mistakes throw `StateError` (e.g., calling a method before `init`).
+- Native failures typically throw `PlatformException` with a `code` and `message`.
+
+Common error codes:
+- `not_initialized`: call and await `init` first
+- `no_activity` (Android): call from a foreground Activity (don’t call from a background isolate)
+- `no_presenter` (iOS): no active `UIViewController` available to present UI
+
+Example:
+
+```dart
+try {
+  await RapidoReach.instance.showRewardCenter();
+} catch (e) {
+  // show a toast/snackbar in debug builds
+  // print('$e');
+}
+```

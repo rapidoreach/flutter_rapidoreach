@@ -2,23 +2,18 @@
 
 * TODO: Describe initial release.
 
+## 1.1.0
+
+* Bundle the native SDKs so end users don’t need any CocoaPods/Maven credentials anymore:
+  * Android: ship `RapidoReach` as a local Maven artifact under `android/maven/com/rapidoreach/cbofferwallsdk/1.1.0`.
+  * iOS: include the RapidoReach source files (`RapidoReach` v1.0.8) inside `ios/Classes/RapidoReach`.
+* Harden the Dart and platform APIs with clear `StateError`/`PlatformException` codes (`not_initialized`, `no_activity`, `no_presenter`, etc.) and keep native listener callbacks safe from user crashes.
+* Upgrade the example app to mirror the React Native feature set (placements, quick questions, logs, etc.) and document the protected APIs.
+
 ## 1.0.9
 
 * Bug fixes
 
-## 1.1.0
+## 1.0.8
 
-* Upgrade Android native SDK dependency to `com.rapidoreach:cbofferwallsdk:1.1.0` (minSdk 23, compileSdk 35)
-* Vendor iOS SDK sources from `RapidoReach` `v1.0.7` into the plugin (avoids CocoaPods name collision on case-insensitive filesystems)
-* Fix iOS -> Flutter event callbacks (`onReward`, `rapidoReachSurveyAvailable`, `onRewardCenterOpened`, `onRewardCenterClosed`)
-* Ensure Android method calls always return a result (`result.success`)
-
-## 2.0.1
-
-* Improve integration safety: clearer `not_initialized` / `no_activity` errors, and guards to prevent native crashes.
-* Make Dart listeners resilient to exceptions (user callbacks no longer crash the app).
-
-## 2.0.0
-
-* Require Dart `^3.8.0` and upgrade `flutter_lints` to `^6.0.0`
-* Remove unused `flutter_pollfish` from the example app
+* TODO: Describe initial release.
