@@ -141,6 +141,7 @@ limitations:
 - Minimum iOS is 12.0 and minimum Android version is 23
 - Dart SDK is `^3.8.0`
 - iOS native SDK sources are vendored into this plugin (based on `RapidoReach` `v1.0.7`)
+- Android native SDK is vendored into this plugin (based on `cbofferwallsdk` `1.1.0`)
 
 For other RapidoReach products, see
 [RapidoReach docs](https://www.rapidoreach.com/docs).
