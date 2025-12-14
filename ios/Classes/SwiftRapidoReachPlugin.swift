@@ -9,9 +9,13 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
   private var surveyAvailability: Bool = false
   private var configuredApiKey: String?
   private var configuredUserId: String?
+  private var isInitialized: Bool = false
   private var networkLoggingEnabled: Bool = false
   private var previousLoggerSink: ((RapidoReachLogLevel, String) -> Void)?
   private var previousLoggerLevel: RapidoReachLogLevel?
+  private var navBarText: String?
+  private var navBarColor: String?
+  private var navBarTextColor: String?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "rapidoreach", binaryMessenger: registrar.messenger())
@@ -29,6 +33,19 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
             let userId = args["user_id"] as? String,
             !userId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
         result(FlutterError(code: "invalid_args", message: "api_token and user_id are required", details: nil))
+        return
+      }
+
+      if isInitialized {
+        if let configuredApiKey, configuredApiKey != apiKey {
+          result(FlutterError(code: "already_initialized", message: "RapidoReach is already initialized with a different api_token. Restart the app to reinitialize.", details: nil))
+          return
+        }
+        if configuredUserId != userId {
+          configuredUserId = userId
+          RapidoReach.shared.setUserIdentifier(userId)
+        }
+        result(nil)
         return
       }
 
@@ -52,16 +69,26 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
       RapidoReach.shared.configure(apiKey: apiKey, user: userId)
+      if let navBarText { RapidoReach.shared.setNavigationBarText(for: navBarText) }
+      if let navBarColor { RapidoReach.shared.setNavigationBarColor(for: navBarColor) }
+      if let navBarTextColor { RapidoReach.shared.setNavigationBarTextColor(for: navBarTextColor) }
       RapidoReach.shared.fetchAppUserID()
+      isInitialized = true
       result(nil)
 
     case "show":
-      RapidoReach.shared.presentSurvey()
-      result(nil)
+      guard requireInitialized(result, method: "show") else { return }
+      DispatchQueue.main.async {
+        RapidoReach.shared.presentSurvey()
+        result(nil)
+      }
 
     case "showRewardCenter":
-      RapidoReach.shared.presentSurvey()
-      result(nil)
+      guard requireInitialized(result, method: "showRewardCenter") else { return }
+      DispatchQueue.main.async {
+        RapidoReach.shared.presentSurvey()
+        result(nil)
+      }
 
     case "setUserIdentifier":
       guard let args = call.arguments as? [String: Any],
@@ -71,34 +98,44 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
         return
       }
       configuredUserId = userId
+      guard requireInitialized(result, method: "setUserIdentifier") else { return }
       RapidoReach.shared.setUserIdentifier(userId)
       result(nil)
 
     case "setNavBarText":
-      guard let args = call.arguments as? [String: Any],
-            let text = args["text"] as? String else {
-        result(FlutterError(code: "invalid_args", message: "text is required", details: nil))
+      guard let args = call.arguments as? [String: Any] else {
+        result(FlutterError(code: "invalid_args", message: "arguments are required", details: nil))
         return
       }
-      RapidoReach.shared.setNavigationBarText(for: text)
+      let text = args["text"] as? String
+      navBarText = text
+      if isInitialized, let text {
+        RapidoReach.shared.setNavigationBarText(for: text)
+      }
       result(nil)
 
     case "setNavBarColor":
-      guard let args = call.arguments as? [String: Any],
-            let color = args["color"] as? String else {
-        result(FlutterError(code: "invalid_args", message: "color is required", details: nil))
+      guard let args = call.arguments as? [String: Any] else {
+        result(FlutterError(code: "invalid_args", message: "arguments are required", details: nil))
         return
       }
-      RapidoReach.shared.setNavigationBarColor(for: color)
+      let color = args["color"] as? String
+      navBarColor = color
+      if isInitialized, let color {
+        RapidoReach.shared.setNavigationBarColor(for: color)
+      }
       result(nil)
 
     case "setNavBarTextColor":
-      guard let args = call.arguments as? [String: Any],
-            let textColor = args["text_color"] as? String else {
-        result(FlutterError(code: "invalid_args", message: "text_color is required", details: nil))
+      guard let args = call.arguments as? [String: Any] else {
+        result(FlutterError(code: "invalid_args", message: "arguments are required", details: nil))
         return
       }
-      RapidoReach.shared.setNavigationBarTextColor(for: textColor)
+      let textColor = args["text_color"] as? String
+      navBarTextColor = textColor
+      if isInitialized, let textColor {
+        RapidoReach.shared.setNavigationBarTextColor(for: textColor)
+      }
       result(nil)
 
     case "enableNetworkLogging":
@@ -125,9 +162,11 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       result(nil)
 
     case "isSurveyAvailable":
+      guard requireInitialized(result, method: "isSurveyAvailable") else { return }
       result(surveyAvailability)
 
     case "sendUserAttributes":
+      guard requireInitialized(result, method: "sendUserAttributes") else { return }
       guard let args = call.arguments as? [String: Any],
             let attributes = args["attributes"] as? [String: Any] else {
         result(FlutterError(code: "invalid_args", message: "attributes is required", details: nil))
@@ -161,6 +200,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "getPlacementDetails":
+      guard requireInitialized(result, method: "getPlacementDetails") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String else {
         result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
@@ -179,6 +219,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "listSurveys":
+      guard requireInitialized(result, method: "listSurveys") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String else {
         result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
@@ -197,6 +238,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "hasSurveys":
+      guard requireInitialized(result, method: "hasSurveys") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String else {
         result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
@@ -215,6 +257,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "canShowContent":
+      guard requireInitialized(result, method: "canShowContent") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String else {
         result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
@@ -233,6 +276,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "canShowSurvey":
+      guard requireInitialized(result, method: "canShowSurvey") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String,
             let surveyId = args["surveyId"] as? String else {
@@ -252,6 +296,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "showSurvey":
+      guard requireInitialized(result, method: "showSurvey") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String,
             let surveyId = args["surveyId"] as? String else {
@@ -273,7 +318,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
             responseBody: ["surveyEntryUrl": url.absoluteString]
           )
           guard let presenter = self?.topMostController() else {
-            result(nil)
+            result(FlutterError(code: "no_presenter", message: "Unable to present survey UI because no active UIViewController was found.", details: nil))
             return
           }
           DispatchQueue.main.async {
@@ -289,6 +334,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "fetchQuickQuestions":
+      guard requireInitialized(result, method: "fetchQuickQuestions") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String else {
         result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
@@ -307,6 +353,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "hasQuickQuestions":
+      guard requireInitialized(result, method: "hasQuickQuestions") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String else {
         result(FlutterError(code: "invalid_args", message: "tag is required", details: nil))
@@ -325,6 +372,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       }
 
     case "answerQuickQuestion":
+      guard requireInitialized(result, method: "answerQuickQuestion") else { return }
       guard let args = call.arguments as? [String: Any],
             let tag = args["tag"] as? String,
             let questionId = args["questionId"] as? String,
@@ -349,6 +397,18 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
     default:
       result(FlutterMethodNotImplemented)
     }
+  }
+
+  private func requireInitialized(_ result: FlutterResult, method: String) -> Bool {
+    if isInitialized { return true }
+    result(
+      FlutterError(
+        code: "not_initialized",
+        message: "RapidoReach not initialized. Call RapidoReach.instance.init(apiToken: ..., userId: ...) and await it before calling `\(method)`.",
+        details: ["method": method]
+      )
+    )
+    return false
   }
 
   private func enableNetworkLogging(_ enabled: Bool) {

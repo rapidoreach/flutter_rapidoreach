@@ -1,152 +1,255 @@
-# flutter_rapidoreach
+# rapidoreach (Flutter)
 
-A plugin for [Flutter](https://flutter.io) that supports rendering surveys using [RapidoReach SDKs](https://www.rapidoreach.com/docs/).
+RapidoReach is a Flutter plugin for showing rewarded survey content (offerwall / placements / quick questions) using the RapidoReach native SDKs.
 
-*Note*: RapidoReach iOS SDK utilizes Apple's Advertising ID (IDFA) to identify and retarget users with RapidoReach surveys. 
+## Before you start
 
-## Initializing the plugin
+### Get an API key
 
-The RapidoReach plugin must be initialized with a RapidoReach API Key. You can retrieve an API key from RapidoReach Dashboard when you [sign up](https://www.rapidoreach.com/signup/) and create a new app.
+Sign up for a developer account, create an app in the RapidoReach dashboard, and copy your API key.
 
-## Usage
+### Requirements
 
-### Initialize RapidoReach
-First, you need to initialize the RapidoReach instance with `init` call.
+- Flutter: `>= 3.0.0`
+- Dart: `^3.8.0`
+- Android: minSdk `23`
+- iOS: minimum deployment target `12.0`
+
+Notes:
+- iOS uses `AdSupport` / `CoreTelephony` / `WebKit`. If you use IDFA, implement App Tracking Transparency (ATT) in your app and include `NSUserTrackingUsageDescription` in your iOS `Info.plist`.
+- This plugin vendors the native SDKs:
+  - iOS sources are included in `ios/Classes/RapidoReach` (based on `RapidoReach` `v1.0.7`).
+  - Android SDK is included as a bundled AAR under `android/maven` (based on `cbofferwallsdk` `1.1.0`).
+
+## Installation
+
+Add the dependency:
+
+```yaml
+dependencies:
+  rapidoreach: ^2.0.1
+```
+
+Then run:
+
+`flutter pub get`
+
+## Quick start
+
+### Import
+
 ```dart
-// Import RapidoReach package
 import 'package:rapidoreach/RapidoReach.dart';
-
-RapidoReach.instance.init(apiToken: 'YOUR_API_TOKEN', userId: 'YOUR_USER_ID')
 ```
 
-### Reward Center
-Next, implement the logic to display the reward center. Call the `show` method when you are ready to send the user into the reward center where they can complete surveys in exchange for your virtual currency. We automatically convert the amount of currency a user gets based on the conversion rate specified in your app.
+### Initialize (required)
+
+Call `init` once (typically on app start, or after login) and `await` it.
 
 ```dart
-RapidoReach.instance.show(),
+await RapidoReach.instance.init(
+  apiToken: 'YOUR_API_TOKEN',
+  userId: 'YOUR_USER_ID',
+);
 ```
 
-### Reward Callback
-
-To ensure safety and privacy, we recommend using a server side callback to notify you of all awards. In the developer dashboard for your App add the server callback that we should call to notify you when a user has completed an offer. Note the user ID pass into the initialize call will be returned to you in the server side callback. More information about setting up the callback can be found in the developer dashboard.
-
-The quantity value will automatically be converted to your virtual currency based on the exchange rate you specified in your app. Currency is always rounded in favor of the app user to improve happiness and engagement.
-
-#### Client Side Award Callback
-
-If you do not have a server to handle server side callbacks we additionally provide you with the ability to listen to client side reward notification. 
+### Show the reward center (offerwall)
 
 ```dart
-RapidoReach.instance.setOnRewardListener(onRapidoReachReward);
+await RapidoReach.instance.showRewardCenter();
 ```
 
-Implement the callback:
+## Error handling (recommended)
+
+Most APIs return `Future`s and can throw.
+
+- Dart-side integration mistakes throw `StateError` (e.g., calling a method before `init`).
+- Native failures typically throw `PlatformException` with a `code` and `message`.
+
+Common error codes:
+- `not_initialized`: call and await `init` first
+- `no_activity` (Android): call from a foreground Activity (don’t call from a background isolate)
+- `no_presenter` (iOS): no active `UIViewController` available to present UI
+
+Example:
+
 ```dart
-void onRapidoReachReward(int quantity) {
-    print('TR: $quantity');
+try {
+  await RapidoReach.instance.showRewardCenter();
+} catch (e) {
+  // show a toast/snackbar in debug builds
+  // print('$e');
 }
 ```
 
-#### Reward Center Events
+## Events (rewards, lifecycle, survey availability, errors)
 
-You can optionally listen for the `setRewardCenterOpened` and `setRewardCenterClosed` events that are fired when your Reward Center modal is opened and closed.
+### Reward callback
 
-Add event listeners for `onRewardCenterOpened` and `onRewardCenterClosed`:
+You should use server-to-server callbacks for production reward attribution whenever possible.
+If you need a client-side signal, listen for `onReward`:
 
 ```dart
-RapidoReach.instance
-        .setRewardCenterClosed(onRewardCenterClosed);
-RapidoReach.instance
-        .setRewardCenterOpened(onRewardCenterOpened);
+RapidoReach.instance.setOnRewardListener((quantity) {
+  // quantity is your converted virtual currency amount
+  // Update UI or enqueue a backend verification call
+});
 ```
 
-Implement event callbacks:
+### Reward center open/close
+
 ```dart
-void onRewardCenterOpened() {
-  print('onRewardCenterOpened called!');
+RapidoReach.instance.setRewardCenterOpened(() {
+  // UI opened
+});
+RapidoReach.instance.setRewardCenterClosed(() {
+  // UI closed
+});
+```
+
+### Survey availability
+
+```dart
+RapidoReach.instance.setSurveyAvaiableListener((available) {
+  // available is typically 1/0
+});
+```
+
+### Error events (optional)
+
+```dart
+RapidoReach.instance.setOnErrorListener((message) {
+  // Native errors can be forwarded here (in addition to thrown exceptions).
+});
+```
+
+## Customization (navigation bar)
+
+Call these after `init` (or set them before init; the SDK will apply when possible):
+
+```dart
+await RapidoReach.instance.setNavBarText(text: 'Rewards');
+await RapidoReach.instance.setNavBarColor(color: '#211548');
+await RapidoReach.instance.setNavBarTextColor(textColor: '#FFFFFF');
+```
+
+## Placement-based flows (recommended)
+
+If you use multiple placements or want a guided UX, query placement state and show a specific survey:
+
+```dart
+final tag = 'default';
+final canShow = await RapidoReach.instance.canShowContent(tag: tag);
+if (!canShow) return;
+
+final surveys = await RapidoReach.instance.listSurveys(tag: tag);
+final firstSurveyId = surveys.isNotEmpty ? surveys.first['surveyIdentifier']?.toString() : null;
+if (firstSurveyId == null || firstSurveyId.isEmpty) return;
+
+await RapidoReach.instance.showSurvey(
+  tag: tag,
+  surveyId: firstSurveyId,
+  customParams: {'source': 'home_screen'},
+);
+```
+
+Placement helpers:
+- `getPlacementDetails(tag)`
+- `listSurveys(tag)`
+- `hasSurveys(tag)`
+- `canShowContent(tag)`
+- `canShowSurvey(tag, surveyId)`
+- `showSurvey(tag, surveyId, customParams?)`
+
+## Quick Questions
+
+```dart
+final tag = 'default';
+final payload = await RapidoReach.instance.fetchQuickQuestions(tag: tag);
+final hasQuestions = await RapidoReach.instance.hasQuickQuestions(tag: tag);
+
+if (hasQuestions) {
+  await RapidoReach.instance.answerQuickQuestion(
+    tag: tag,
+    questionId: 'QUESTION_ID',
+    answer: 'yes',
+  );
 }
-
-void onRewardCenterClosed() {
-  print('onRewardCenterClosed called!');
-}
 ```
 
-#### Survey Available Callback
+## User attributes
 
-If you'd like to be proactively alerted to when a survey is available for a user you can add this event listener. 
-
-First, import Native Module Event Emitter:
-```dart
-RapidoReach.instance
-        .setSurveyAvaiableListener(onRapidoReachSurveyAvailable);
-```
-
-Implement the callback:
-```dart
-void onRapidoReachSurveyAvailable(int survey) {
-    print('TR: $survey');
-}
-```
-
-### Customizing SDK options
-
-We provide several methods to customize the navigation bar to feel like your app.
-
-```
-    RapidoReach.instance.setNavBarText(text: 'Rapido Demo App');
-    RapidoReach.instance.setNavBarColor(color: '#211548');   
-    RapidoReach.instance.setNavBarTextColor(textColor: '#FFFFFF');
-```
-### Debuging
-
-If in case you get multidex issues
-
-This is how you can enable multidex for your flutter project.
-
-Enable multidex.
-Open [project_folder]/app/build.gradle and add following lines.
+Send attributes to improve targeting/eligibility (only send values you have consent for):
 
 ```dart
-defaultConfig {
-    ...
+await RapidoReach.instance.sendUserAttributes(
+  attributes: {'country': 'US', 'premium': true},
+  clearPrevious: false,
+);
+```
 
+## Backends / environments
+
+If you use a staging/regional backend, configure it via:
+
+```dart
+await RapidoReach.instance.updateBackend(
+  baseURL: 'https://your-backend.example',
+  rewardHashSalt: null,
+);
+```
+
+## Network logging (debug)
+
+Enable network logs (helpful during QA) and subscribe:
+
+```dart
+RapidoReach.instance.setNetworkLogListener((payload) {
+  // payload: { name, method, url?, requestBody?, responseBody?, error?, timestampMs }
+  // print(payload);
+});
+
+await RapidoReach.instance.enableNetworkLogging(enabled: true);
+```
+
+You can also read the configured base URL:
+
+```dart
+final baseUrl = await RapidoReach.instance.getBaseUrl();
+```
+
+## Android multidex (only if you hit dex limits)
+
+If you hit dex method count issues, enable multidex in your app:
+
+- In `android/app/build.gradle`:
+
+```gradle
+android {
+  defaultConfig {
     multiDexEnabled true
+  }
 }
-```
 
-and
-
-(optional or if required)
-
-```dart
 dependencies {
-    ...
-
-    implementation 'com.android.support:multidex:1.0.3'
+  implementation "androidx.multidex:multidex:2.0.1"
 }
 ```
 
-## Following the rewarded and/or theOfferwall approach
+## Example app
 
-An example is provided on [Github](https://github.com/rapidoreach/flutter_rapidoreach) that demonstrates how a publisher can implement the rewarded and/or the Offerwall approach. Upon survey completion, the publisher can reward the user.
+This repo includes a full example app that demonstrates:
+- init + user id updates
+- reward center
+- placement APIs + survey listing/showing
+- user attributes
+- quick questions
+- network logging
 
+Run it locally:
 
-## Limitations / Minimum Requirements
+`cd example && flutter run`
 
-This is just an initial version of the plugin. There are still some
-limitations:
+## Publishing to pub.dev (CI)
 
-- You cannot pass custom attributes during initialization
-- No tests implemented yet
-- Minimum iOS is 12.0 and minimum Android version is 23
-- Dart SDK is `^3.8.0`
-- iOS native SDK sources are vendored into this plugin (based on `RapidoReach` `v1.0.7`)
-- Android native SDK is vendored into this plugin (based on `cbofferwallsdk` `1.1.0`)
-
-For other RapidoReach products, see
-[RapidoReach docs](https://www.rapidoreach.com/docs).
-
-
-## Getting Started
-
-If you would like to review an example in code please review the [Github project](https://github.com/rapidoreach/flutter_rapidoreach).
+This repo includes a GitHub Actions workflow at `.github/workflows/pubdev-publish.yml` that builds/tests the plugin + example and publishes to pub.dev on tags like `v2.0.1`.

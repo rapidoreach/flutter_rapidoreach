@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +14,7 @@ class RapidoReach {
   static RapidoReach get instance => _instance;
 
   final MethodChannel _channel;
+  bool _initialized = false;
 
   static final RapidoReach _instance = RapidoReach.private(
     const MethodChannel('rapidoreach'),
@@ -21,12 +24,23 @@ class RapidoReach {
     _channel.setMethodCallHandler(_platformCallHandler);
   }
 
+  @visibleForTesting
+  void resetForTesting() {
+    _initialized = false;
+  }
+
   static OnRewardListener? _onRewardListener;
   static SurveyAvailableListener? _surveyAvailableListener;
   static RewardCenterOpenedListener? _rewardCenterOpenedListener;
   static RewardCenterClosedListener? _rewardCenterClosedListener;
   static NetworkLogListener? _networkLogListener;
   static ErrorListener? _errorListener;
+
+  Never _notInitialized(String method) {
+    throw StateError(
+      'RapidoReach not initialized. Call `RapidoReach.instance.init(apiToken: ..., userId: ...)` and await it before calling `$method`.',
+    );
+  }
 
   int? _coerceInt(dynamic value) {
     if (value == null) return null;
@@ -46,24 +60,25 @@ class RapidoReach {
   }
 
   Future<void> init({String? apiToken, String? userId}) async {
-    assert(apiToken != null && apiToken.isNotEmpty);
-    assert(userId != null && userId.isNotEmpty);
     if (apiToken == null || apiToken.isEmpty) {
       throw ArgumentError.value(apiToken, 'apiToken', 'apiToken is required');
     }
     if (userId == null || userId.isEmpty) {
       throw ArgumentError.value(userId, 'userId', 'userId is required');
     }
-    return _channel.invokeMethod(
+    await _channel.invokeMethod(
         "init", <String, dynamic>{"api_token": apiToken, "user_id": userId});
+    _initialized = true;
   }
 
   Future<void> show({String? placementID}) {
+    if (!_initialized) _notInitialized('show');
     return _channel
         .invokeMethod("show", <String, dynamic>{"placementID": placementID});
   }
 
   Future<void> showRewardCenter() {
+    if (!_initialized) _notInitialized('showRewardCenter');
     return _channel.invokeMethod("showRewardCenter");
   }
 
@@ -83,6 +98,7 @@ class RapidoReach {
   }
 
   Future<void> setUserIdentifier({required String userId}) {
+    if (!_initialized) _notInitialized('setUserIdentifier');
     return _channel
         .invokeMethod('setUserIdentifier', <String, dynamic>{'user_id': userId});
   }
@@ -105,12 +121,14 @@ class RapidoReach {
   }
 
   Future<bool> isSurveyAvailable() async {
+    if (!_initialized) _notInitialized('isSurveyAvailable');
     final res = await _channel.invokeMethod('isSurveyAvailable');
     return _coerceBool(res);
   }
 
   Future<void> sendUserAttributes(
       {required Map<String, dynamic> attributes, bool clearPrevious = false}) {
+    if (!_initialized) _notInitialized('sendUserAttributes');
     return _channel.invokeMethod('sendUserAttributes', <String, dynamic>{
       'attributes': attributes,
       'clear_previous': clearPrevious,
@@ -118,30 +136,37 @@ class RapidoReach {
   }
 
   Future<Map<String, dynamic>> getPlacementDetails({required String tag}) async {
+    if (!_initialized) _notInitialized('getPlacementDetails');
     final res = await _channel
         .invokeMethod('getPlacementDetails', <String, dynamic>{'tag': tag});
-    return Map<String, dynamic>.from(res as Map);
+    if (res is Map) return Map<String, dynamic>.from(res);
+    throw StateError(
+        'Expected a Map response from getPlacementDetails, got ${res.runtimeType}.');
   }
 
   Future<List<dynamic>> listSurveys({required String tag}) async {
+    if (!_initialized) _notInitialized('listSurveys');
     final res =
         await _channel.invokeMethod('listSurveys', <String, dynamic>{'tag': tag});
     return (res as List?) ?? <dynamic>[];
   }
 
   Future<bool> hasSurveys({required String tag}) async {
+    if (!_initialized) _notInitialized('hasSurveys');
     final res =
         await _channel.invokeMethod('hasSurveys', <String, dynamic>{'tag': tag});
     return _coerceBool(res);
   }
 
   Future<bool> canShowContent({required String tag}) async {
+    if (!_initialized) _notInitialized('canShowContent');
     final res = await _channel
         .invokeMethod('canShowContent', <String, dynamic>{'tag': tag});
     return _coerceBool(res);
   }
 
   Future<bool> canShowSurvey({required String tag, required String surveyId}) async {
+    if (!_initialized) _notInitialized('canShowSurvey');
     final res = await _channel.invokeMethod('canShowSurvey',
         <String, dynamic>{'tag': tag, 'surveyId': surveyId});
     return _coerceBool(res);
@@ -151,6 +176,7 @@ class RapidoReach {
       {required String tag,
       required String surveyId,
       Map<String, dynamic>? customParams}) {
+    if (!_initialized) _notInitialized('showSurvey');
     return _channel.invokeMethod('showSurvey', <String, dynamic>{
       'tag': tag,
       'surveyId': surveyId,
@@ -159,12 +185,16 @@ class RapidoReach {
   }
 
   Future<Map<String, dynamic>> fetchQuickQuestions({required String tag}) async {
+    if (!_initialized) _notInitialized('fetchQuickQuestions');
     final res = await _channel
         .invokeMethod('fetchQuickQuestions', <String, dynamic>{'tag': tag});
-    return Map<String, dynamic>.from(res as Map);
+    if (res is Map) return Map<String, dynamic>.from(res);
+    throw StateError(
+        'Expected a Map response from fetchQuickQuestions, got ${res.runtimeType}.');
   }
 
   Future<bool> hasQuickQuestions({required String tag}) async {
+    if (!_initialized) _notInitialized('hasQuickQuestions');
     final res = await _channel
         .invokeMethod('hasQuickQuestions', <String, dynamic>{'tag': tag});
     return _coerceBool(res);
@@ -174,48 +204,60 @@ class RapidoReach {
       {required String tag,
       required String questionId,
       required dynamic answer}) async {
+    if (!_initialized) _notInitialized('answerQuickQuestion');
     final res = await _channel.invokeMethod('answerQuickQuestion',
         <String, dynamic>{'tag': tag, 'questionId': questionId, 'answer': answer});
-    return Map<String, dynamic>.from(res as Map);
+    if (res is Map) return Map<String, dynamic>.from(res);
+    throw StateError(
+        'Expected a Map response from answerQuickQuestion, got ${res.runtimeType}.');
   }
 
   Future _platformCallHandler(MethodCall call) async {
-    debugPrint(
-        "RapidoReach _platformCallHandler call ${call.method} ${call.arguments}");
+    void safe(String name, void Function() fn) {
+      try {
+        fn();
+      } catch (e, st) {
+        debugPrint('RapidoReach listener `$name` threw: $e\n$st');
+      }
+    }
 
     switch (call.method) {
       case "onReward":
-        _onRewardListener?.call(_coerceInt(call.arguments));
+        safe('onReward', () => _onRewardListener?.call(_coerceInt(call.arguments)));
         break;
 
       case "rapidoReachSurveyAvailable":
-        _surveyAvailableListener?.call(_coerceInt(call.arguments));
+        safe('rapidoReachSurveyAvailable',
+            () => _surveyAvailableListener?.call(_coerceInt(call.arguments)));
         break;
 
       case "rapidoreachSurveyAvailable":
-        _surveyAvailableListener?.call(_coerceInt(call.arguments));
+        safe('rapidoreachSurveyAvailable',
+            () => _surveyAvailableListener?.call(_coerceInt(call.arguments)));
         break;
 
       case "onRewardCenterOpened":
-        _rewardCenterOpenedListener?.call();
+        safe('onRewardCenterOpened', () => _rewardCenterOpenedListener?.call());
         break;
 
       case "onRewardCenterClosed":
-        _rewardCenterClosedListener?.call();
+        safe('onRewardCenterClosed', () => _rewardCenterClosedListener?.call());
         break;
 
       case "rapidoreachNetworkLog":
         final payload = call.arguments;
-        if (payload is Map) {
-          _networkLogListener?.call(Map<String, dynamic>.from(payload));
-        }
+        safe('rapidoreachNetworkLog', () {
+          if (payload is Map) {
+            _networkLogListener?.call(Map<String, dynamic>.from(payload));
+          }
+        });
         break;
 
       case "onError":
-        _errorListener?.call(call.arguments?.toString() ?? '');
+        safe('onError', () => _errorListener?.call(call.arguments?.toString() ?? ''));
         break;
       default:
-        debugPrint('Unknown method ${call.method}');
+        debugPrint('RapidoReach: unhandled native event `${call.method}`');
     }
   }
 

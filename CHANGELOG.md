@@ -13,6 +13,11 @@
 * Fix iOS -> Flutter event callbacks (`onReward`, `rapidoReachSurveyAvailable`, `onRewardCenterOpened`, `onRewardCenterClosed`)
 * Ensure Android method calls always return a result (`result.success`)
 
+## 2.0.1
+
+* Improve integration safety: clearer `not_initialized` / `no_activity` errors, and guards to prevent native crashes.
+* Make Dart listeners resilient to exceptions (user callbacks no longer crash the app).
+
 ## 2.0.0
 
 * Require Dart `^3.8.0` and upgrade `flutter_lints` to `^6.0.0`

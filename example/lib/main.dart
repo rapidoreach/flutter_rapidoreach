@@ -210,9 +210,14 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _openOfferwall() {
+  Future<void> _openOfferwall() async {
     _addLog(level: 'info', title: 'showRewardCenter');
-    RapidoReach.instance.showRewardCenter();
+    try {
+      await RapidoReach.instance.showRewardCenter();
+    } catch (e) {
+      _addLog(level: 'error', title: 'showRewardCenter failed', response: '$e');
+      _showSnack('showRewardCenter failed: $e');
+    }
   }
 
   Future<void> _checkPlacement() async {

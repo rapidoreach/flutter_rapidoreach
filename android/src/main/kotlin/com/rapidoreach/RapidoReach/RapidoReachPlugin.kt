@@ -27,10 +27,13 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   private var networkLoggingEnabled: Boolean = false
   private var configuredApiKey: String? = null
   private var configuredUserId: String? = null
+  private var sdkInitialized: Boolean = false
+  private var initInProgress: Boolean = false
 
   private var navBarColor: String? = null
   private var navBarTextColor: String? = null
   private var navBarText: String? = null
+  private var apiEndpoint: String? = null
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "rapidoreach")
@@ -58,38 +61,59 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    when (call.method) {
-      "init" -> init(call, result)
-      "setUserIdentifier" -> setUserIdentifier(call, result)
-      "show" -> show(call, result)
-      "showRewardCenter" -> showRewardCenter(result)
-      "isSurveyAvailable" -> isSurveyAvailable(result)
-      "setNavBarText" -> setNavBarText(call, result)
-      "setNavBarColor" -> setNavBarColor(call, result)
-      "setNavBarTextColor" -> setNavBarTextColor(call, result)
-      "enableNetworkLogging" -> enableNetworkLogging(call, result)
-      "getBaseUrl" -> getBaseUrl(result)
-      "updateBackend" -> updateBackend(call, result)
-      "sendUserAttributes" -> sendUserAttributes(call, result)
-      "getPlacementDetails" -> getPlacementDetails(call, result)
-      "listSurveys" -> listSurveys(call, result)
-      "hasSurveys" -> hasSurveys(call, result)
-      "canShowContent" -> canShowContent(call, result)
-      "canShowSurvey" -> canShowSurvey(call, result)
-      "showSurvey" -> showSurvey(call, result)
-      "fetchQuickQuestions" -> fetchQuickQuestions(call, result)
-      "hasQuickQuestions" -> hasQuickQuestions(call, result)
-      "answerQuickQuestion" -> answerQuickQuestion(call, result)
-      else -> result.notImplemented()
+    try {
+      when (call.method) {
+        "init" -> init(call, result)
+        "setUserIdentifier" -> setUserIdentifier(call, result)
+        "show" -> show(call, result)
+        "showRewardCenter" -> showRewardCenter(result)
+        "isSurveyAvailable" -> isSurveyAvailable(result)
+        "setNavBarText" -> setNavBarText(call, result)
+        "setNavBarColor" -> setNavBarColor(call, result)
+        "setNavBarTextColor" -> setNavBarTextColor(call, result)
+        "enableNetworkLogging" -> enableNetworkLogging(call, result)
+        "getBaseUrl" -> getBaseUrl(result)
+        "updateBackend" -> updateBackend(call, result)
+        "sendUserAttributes" -> sendUserAttributes(call, result)
+        "getPlacementDetails" -> getPlacementDetails(call, result)
+        "listSurveys" -> listSurveys(call, result)
+        "hasSurveys" -> hasSurveys(call, result)
+        "canShowContent" -> canShowContent(call, result)
+        "canShowSurvey" -> canShowSurvey(call, result)
+        "showSurvey" -> showSurvey(call, result)
+        "fetchQuickQuestions" -> fetchQuickQuestions(call, result)
+        "hasQuickQuestions" -> hasQuickQuestions(call, result)
+        "answerQuickQuestion" -> answerQuickQuestion(call, result)
+        else -> result.notImplemented()
+      }
+    } catch (t: Throwable) {
+      result.error("unexpected_error", t.message ?: t.toString(), mapOf("method" to call.method))
     }
   }
 
+  private fun requireInitialized(result: Result, method: String): Boolean {
+    if (sdkInitialized) return true
+    result.error(
+      "not_initialized",
+      "RapidoReach not initialized. Call RapidoReach.instance.init(apiToken: ..., userId: ...) and await it before calling `$method`.",
+      mapOf("method" to method)
+    )
+    return false
+  }
+
+  private fun requireActivity(result: Result, method: String): Activity? {
+    val current = activity
+    if (current != null) return current
+    result.error(
+      "no_activity",
+      "RapidoReach requires a foreground Activity. Call `$method` from a UI-attached Flutter engine (not from a background isolate).",
+      mapOf("method" to method)
+    )
+    return null
+  }
+
   private fun init(call: MethodCall, result: Result) {
-    val currentActivity = activity
-    if (currentActivity == null) {
-      result.error("no_activity", "RapidoReach requires an Activity context.", null)
-      return
-    }
+    val currentActivity = requireActivity(result, "init") ?: return
 
     val apiKey = call.argument<String>("api_token")?.trim()
     val userId = call.argument<String>("user_id")?.trim()
@@ -99,6 +123,37 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
     if (userId.isNullOrEmpty()) {
       result.error("no_user_id", "user_id is required", null)
+      return
+    }
+
+    if (initInProgress) {
+      result.error("init_in_progress", "RapidoReach initialization is already in progress.", null)
+      return
+    }
+
+    if (sdkInitialized) {
+      if (configuredApiKey != null && configuredApiKey != apiKey) {
+        result.error(
+          "already_initialized",
+          "RapidoReach is already initialized with a different api_token. Restart the app to reinitialize.",
+          null
+        )
+        return
+      }
+
+      configuredApiKey = apiKey
+      if (configuredUserId != userId) {
+        configuredUserId = userId
+        RapidoReachSdk.setUserIdentifier(userId) { err ->
+          if (err != null) {
+            result.error("set_user_id_error", err.description ?: err.code, null)
+          } else {
+            result.success(null)
+          }
+        }
+      } else {
+        result.success(null)
+      }
       return
     }
 
@@ -115,6 +170,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     )
 
     var settled = false
+    initInProgress = true
     RapidoReachSdk.initialize(
       apiToken = apiKey,
       userIdentifier = userId,
@@ -124,6 +180,8 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         sendEvent("onReward", total)
       },
       errorCallback = { error ->
+        sdkInitialized = false
+        initInProgress = false
         sendEvent("onError", error.description ?: error.code)
         emitNetworkLog(
           name = "initialize",
@@ -137,6 +195,14 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
       },
       sdkReadyCallback = {
+        sdkInitialized = true
+        initInProgress = false
+        apiEndpoint?.let {
+          try {
+            RapidoReach.getInstance().setApiEndpoint(it)
+          } catch (_: Exception) {
+          }
+        }
         emitNetworkLog(
           name = "initialize",
           method = "INIT",
@@ -171,6 +237,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
       return
     }
     configuredUserId = userId
+    if (!requireInitialized(result, "setUserIdentifier")) return
     RapidoReachSdk.setUserIdentifier(userId) { error: RrError? ->
       if (error != null) {
         result.error(error.code, error.description ?: error.code, null)
@@ -181,6 +248,8 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun show(call: MethodCall, result: Result) {
+    requireActivity(result, "show") ?: return
+    if (!requireInitialized(result, "show")) return
     val placement = call.argument<String>("placementID")?.trim()
     try {
       if (!placement.isNullOrEmpty()) {
@@ -195,6 +264,8 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun showRewardCenter(result: Result) {
+    requireActivity(result, "showRewardCenter") ?: return
+    if (!requireInitialized(result, "showRewardCenter")) return
     try {
       RapidoReach.getInstance().showRewardCenter()
       result.success(null)
@@ -204,6 +275,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun isSurveyAvailable(result: Result) {
+    if (!requireInitialized(result, "isSurveyAvailable")) return
     try {
       result.success(RapidoReach.getInstance().isSurveyAvailable())
     } catch (e: Exception) {
@@ -215,7 +287,9 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     val text = call.argument<String>("text")
     navBarText = text
     try {
-      RapidoReach.getInstance().setNavigationBarText(text)
+      if (sdkInitialized) {
+        RapidoReach.getInstance().setNavigationBarText(text)
+      }
       result.success(null)
     } catch (e: Exception) {
       result.error("set_navbar_text_error", e.message, null)
@@ -226,7 +300,9 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     val color = call.argument<String>("color")
     navBarColor = color
     try {
-      RapidoReach.getInstance().setNavigationBarColor(color)
+      if (sdkInitialized) {
+        RapidoReach.getInstance().setNavigationBarColor(color)
+      }
       result.success(null)
     } catch (e: Exception) {
       result.error("set_navbar_color_error", e.message, null)
@@ -237,7 +313,9 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     val textColor = call.argument<String>("text_color")
     navBarTextColor = textColor
     try {
-      RapidoReach.getInstance().setNavigationBarTextColor(textColor)
+      if (sdkInitialized) {
+        RapidoReach.getInstance().setNavigationBarTextColor(textColor)
+      }
       result.success(null)
     } catch (e: Exception) {
       result.error("set_navbar_text_color_error", e.message, null)
@@ -264,8 +342,11 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
       result.error("invalid_args", "baseURL is required", null)
       return
     }
+    apiEndpoint = baseUrl
     try {
-      RapidoReach.getInstance().setApiEndpoint(baseUrl)
+      if (sdkInitialized) {
+        RapidoReach.getInstance().setApiEndpoint(baseUrl)
+      }
       emitNetworkLog(name = "updateBackend", method = "CONFIG", url = baseUrl)
       result.success(null)
     } catch (e: Exception) {
@@ -275,6 +356,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun sendUserAttributes(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "sendUserAttributes")) return
     val attributes = call.argument<Map<String, Any?>>("attributes") ?: emptyMap()
     val clearPrevious = call.argument<Boolean>("clear_previous") ?: false
     val safeAttributes: Map<String, Any> =
@@ -312,6 +394,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun getPlacementDetails(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "getPlacementDetails")) return
     val tag = call.argument<String>("tag")?.trim()
     if (tag.isNullOrEmpty()) {
       result.error("invalid_args", "tag is required", null)
@@ -344,6 +427,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun listSurveys(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "listSurveys")) return
     val tag = call.argument<String>("tag")?.trim()
     if (tag.isNullOrEmpty()) {
       result.error("invalid_args", "tag is required", null)
@@ -380,6 +464,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun hasSurveys(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "hasSurveys")) return
     val tag = call.argument<String>("tag")?.trim()
     if (tag.isNullOrEmpty()) {
       result.error("invalid_args", "tag is required", null)
@@ -401,6 +486,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun canShowContent(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "canShowContent")) return
     val tag = call.argument<String>("tag")?.trim()
     if (tag.isNullOrEmpty()) {
       result.error("invalid_args", "tag is required", null)
@@ -423,6 +509,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun canShowSurvey(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "canShowSurvey")) return
     val tag = call.argument<String>("tag")?.trim()
     val surveyId = call.argument<String>("surveyId")?.trim()
     if (tag.isNullOrEmpty() || surveyId.isNullOrEmpty()) {
@@ -445,6 +532,8 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun showSurvey(call: MethodCall, result: Result) {
+    requireActivity(result, "showSurvey") ?: return
+    if (!requireInitialized(result, "showSurvey")) return
     val tag = call.argument<String>("tag")?.trim()
     val surveyId = call.argument<String>("surveyId")?.trim()
     val customParamsRaw = call.argument<Map<String, Any?>>("customParams")?.filterValues { it != null }
@@ -484,6 +573,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun fetchQuickQuestions(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "fetchQuickQuestions")) return
     val tag = call.argument<String>("tag")?.trim()
     if (tag.isNullOrEmpty()) {
       result.error("invalid_args", "tag is required", null)
@@ -505,6 +595,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun hasQuickQuestions(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "hasQuickQuestions")) return
     val tag = call.argument<String>("tag")?.trim()
     if (tag.isNullOrEmpty()) {
       result.error("invalid_args", "tag is required", null)
@@ -529,6 +620,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun answerQuickQuestion(call: MethodCall, result: Result) {
+    if (!requireInitialized(result, "answerQuickQuestion")) return
     val tag = call.argument<String>("tag")?.trim()
     val questionId = call.argument<String>("questionId")?.trim()
     val answer = call.argument<Any>("answer")

@@ -1,6 +1,8 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:rapidoreach/RapidoReach.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('rapidoreach');
@@ -8,16 +10,43 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    channel.setMockMethodCallHandler((MethodCall methodCall) async {
-      return '42';
+    RapidoReach.instance.resetForTesting();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      switch (methodCall.method) {
+        case 'init':
+          return null;
+        case 'getBaseUrl':
+          return 'https://example.rapidoreach.test';
+        case 'isSurveyAvailable':
+          return 1;
+        default:
+          return null;
+      }
     });
   });
 
   tearDown(() {
-    channel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
-  // test('getPlatformVersion', () async {
-  //   expect(await RapidoReach.platformVersion, '42');
-  // });
+  test('getBaseUrl returns string', () async {
+    expect(
+      await RapidoReach.instance.getBaseUrl(),
+      'https://example.rapidoreach.test',
+    );
+  });
+
+  test('isSurveyAvailable coerces truthy values', () async {
+    await RapidoReach.instance.init(apiToken: 'token', userId: 'user');
+    expect(await RapidoReach.instance.isSurveyAvailable(), isTrue);
+  });
+
+  test('methods requiring init throw StateError before init', () async {
+    expect(
+      () => RapidoReach.instance.showRewardCenter(),
+      throwsA(isA<StateError>()),
+    );
+  });
 }
