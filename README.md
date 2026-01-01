@@ -18,7 +18,7 @@ Sign up for a developer account, create an app in the RapidoReach dashboard, and
 Notes:
 - iOS uses `AdSupport` / `CoreTelephony` / `WebKit`. If you use IDFA, implement App Tracking Transparency (ATT) in your app and include `NSUserTrackingUsageDescription` in your iOS `Info.plist`.
 - This plugin vendors the native SDKs:
-  - iOS sources are included in `ios/Classes/RapidoReach` (based on `RapidoReach` `v1.0.8`).
+  - iOS sources are included in `ios/Classes/RapidoReach` (based on `RapidoReach` `v1.0.9`).
   - Android SDK is pulled from Maven Central (`com.rapidoreach:cbofferwallsdk:1.1.0`).
 
 ## Installation
