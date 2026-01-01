@@ -19,7 +19,7 @@ Notes:
 - iOS uses `AdSupport` / `CoreTelephony` / `WebKit`. If you use IDFA, implement App Tracking Transparency (ATT) in your app and include `NSUserTrackingUsageDescription` in your iOS `Info.plist`.
 - This plugin vendors the native SDKs:
   - iOS sources are included in `ios/Classes/RapidoReach` (based on `RapidoReach` `v1.0.8`).
-  - Android SDK is included as a bundled AAR under `android/maven` (based on `cbofferwallsdk` `1.1.0`).
+  - Android SDK is pulled from Maven Central (`com.rapidoreach:cbofferwallsdk:1.1.0`).
 
 ## Installation
 
