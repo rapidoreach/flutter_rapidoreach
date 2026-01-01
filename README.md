@@ -27,7 +27,7 @@ Add the dependency:
 
 ```yaml
 dependencies:
-  rapidoreach: ^1.1.0
+  rapidoreach: ^1.1.2
 ```
 
 Then run:

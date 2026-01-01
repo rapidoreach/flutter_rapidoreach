@@ -2,7 +2,7 @@
 
 * TODO: Describe initial release.
 
-## 1.1.0
+## 1.1.2
 
 * Bundle the native SDKs so end users don’t need any CocoaPods/Maven credentials anymore:
   * Android: pull `com.rapidoreach:cbofferwallsdk:1.1.0` from Maven Central.
