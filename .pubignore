@@ -1,0 +1,10 @@
+.dart_tool/
+.git/
+.idea/
+.packages
+.pub/
+build/
+example/build/
+example/ios/Flutter/ephemeral/
+example/ios/Pods/
+ios/Classes/RapidoReach/

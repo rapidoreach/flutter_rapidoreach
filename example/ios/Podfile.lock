@@ -1,22 +1,28 @@
 PODS:
   - Flutter (1.0.0)
-  - rapidoreach (1.1.2):
+  - rapidoreach (2.0.0):
     - Flutter
+    - RapidoReachNative (= 2.0.0)
+  - RapidoReachNative (2.0.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - rapidoreach (from `.symlinks/plugins/rapidoreach/ios`)
+  - RapidoReachNative (from `/Users/Vikash/Documents/my/cbiossdk`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
   rapidoreach:
     :path: ".symlinks/plugins/rapidoreach/ios"
+  RapidoReachNative:
+    :path: "/Users/Vikash/Documents/my/cbiossdk"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  rapidoreach: 619f57456bf3a090edcb48c8e833bc5c3aa9e6cf
+  rapidoreach: b0153247101b9a57a3d8bfd2a2de5838dbbd0761
+  RapidoReachNative: 4319d4a5b64a0fffe386e01e1d8a898565c38ea5
 
-PODFILE CHECKSUM: cc1f88378b4bfcf93a6ce00d2c587857c6008d3b
+PODFILE CHECKSUM: faa39d28559869d1a0bb5603c85160228e5d6603
 
 COCOAPODS: 1.16.2

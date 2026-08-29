@@ -1,3 +1,12 @@
+## 2.0.0
+
+* Add the typed RapidReach v2 session, offer, reward-status, presentation, and
+  event APIs.
+* Consume exact-version native Android and iOS SDK dependencies instead of
+  duplicating native business logic in the Flutter package.
+* Keep reward amounts and transaction state server-authoritative; the client
+  SDK no longer signs or computes rewards.
+
 ## 1.0.9
 
 * TODO: Describe initial release.

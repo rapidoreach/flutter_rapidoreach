@@ -263,3 +263,14 @@ try {
   // print('$e');
 }
 ```
+# RapidReach Flutter v2
+
+Version 2.0.0 exposes `RapidoReachV2` from `rapidoreach_v2.dart` and delegates
+session, offer, reward-status, presentation, and event work to exact-version
+Android/iOS 2.0.0 native SDKs. The wrapper contains no independent network,
+decisioning, attribution, or reward logic. Existing 1.x Dart methods remain as
+compatibility shims for this major-version migration window.
+
+Use development placement/ad-slot/user identifiers for local testing. Never put
+a reward hash salt, callback secret, provider token, or client-authored reward
+amount in Flutter code.

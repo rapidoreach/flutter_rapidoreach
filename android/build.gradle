@@ -1,5 +1,5 @@
 group 'com.rapidoreach.RapidoReach'
-version '1.0'
+version '2.0.0'
 
 buildscript {
     repositories {
@@ -15,6 +15,10 @@ buildscript {
 
 rootProject.allprojects {
     repositories {
+        def rapidoreachLocalRepository = System.getenv('RAPIDOREACH_ANDROID_SDK_REPOSITORY')
+        if (rapidoreachLocalRepository) {
+            maven { url uri(rapidoreachLocalRepository) }
+        }
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
@@ -48,7 +52,7 @@ android {
 }
 
 dependencies {
-    implementation 'com.rapidoreach:cbofferwallsdk:1.1.0'
+    implementation 'com.rapidoreach:cbofferwallsdk:2.0.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.lifecycle:lifecycle-process:2.6.2'
