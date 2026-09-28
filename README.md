@@ -2,6 +2,10 @@
 
 RapidoReach is a Flutter plugin for showing rewarded survey content (offerwall / placements / quick questions) using the RapidoReach native SDKs.
 
+## Integrate with an AI coding agent
+
+Download the [Flutter Agent Skill](https://docs.rapidoreach.com/downloads/rapidoreach-flutter-1.1.0.zip), the [verification skill](https://docs.rapidoreach.com/downloads/rapidoreach-verify-1.1.0.zip), or the [complete skill bundle](https://docs.rapidoreach.com/downloads/rapidoreach-agent-skills-1.1.0.zip). The [Agent Skills guide](https://docs.rapidoreach.com/docs/v2/sdk/ai-agent-skills) explains installation in Codex and Claude Code. Check the [current Flutter guide](https://docs.rapidoreach.com/docs/v2/sdk/fluttersdk) before upgrading.
+
 ## Before you start
 
 ### Get an API key
