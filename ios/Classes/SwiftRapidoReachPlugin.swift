@@ -1,5 +1,6 @@
 import Flutter
 import Foundation
+import RapidoreachNative
 import SafariServices
 import UIKit
 
@@ -16,6 +17,7 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
   private var navBarText: String?
   private var navBarColor: String?
   private var navBarTextColor: String?
+  private var v2Client: RapidoReachV2?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "rapidoreach", binaryMessenger: registrar.messenger())
@@ -394,6 +396,99 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
         }
       }
 
+    case "initializeV2":
+      guard let args = call.arguments as? [String: Any],
+            let placementId = args["placementId"] as? String,
+            !placementId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            let externalUserId = args["externalUserId"] as? String,
+            !externalUserId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        result(FlutterError(code: "invalid_args", message: "placementId and externalUserId are required", details: nil))
+        return
+      }
+      let client = RapidoReachV2(baseURL: RapidoReachConfiguration.shared.baseURL)
+      client.onEvent = { [weak self] event in
+        self?.sendEvent("rapidoreachV2Event", arguments: self?.v2EventDictionary(event))
+      }
+      v2Client?.destroy()
+      v2Client = client
+      let options = RapidoReachV2Options(
+        environment: .init(rawValue: (args["environment"] as? String ?? "production").lowercased()),
+        language: args["language"] as? String,
+        consent: .init(rawValue: (args["consent"] as? String ?? "UNKNOWN").uppercased()),
+        attStatus: .init(rawValue: (args["attStatus"] as? String ?? "NOT_APPLICABLE").uppercased()),
+        adSlotId: args["adSlotId"] as? String
+      )
+      client.initialize(placementId: placementId, externalUserId: externalUserId, options: options) { [weak self] response in
+        self?.completeV2(response, result: result)
+      }
+
+    case "refreshSessionV2":
+      guard let client = requireV2Client(result) else { return }
+      client.refreshSession { [weak self] response in self?.completeV2(response, result: result) }
+
+    case "revokeSessionV2":
+      guard let client = requireV2Client(result) else { return }
+      client.revokeSession { [weak self] response in self?.completeV2Void(response, result: result) }
+
+    case "getOffersV2":
+      guard let client = requireV2Client(result),
+            let args = call.arguments as? [String: Any],
+            let adSlotId = args["adSlotId"] as? String,
+            !adSlotId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        if v2Client?.session != nil {
+          result(FlutterError(code: "invalid_args", message: "adSlotId is required", details: nil))
+        }
+        return
+      }
+      client.getOffers(adSlotId: adSlotId, cursor: args["cursor"] as? String) { [weak self] response in
+        self?.completeV2(response, result: result)
+      }
+
+    case "getRewardStatusV2":
+      guard let client = requireV2Client(result),
+            let args = call.arguments as? [String: Any],
+            let offerId = args["offerId"] as? String,
+            !offerId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        if v2Client?.session != nil {
+          result(FlutterError(code: "invalid_args", message: "offerId is required", details: nil))
+        }
+        return
+      }
+      client.getRewardStatus(offerId: offerId) { [weak self] response in
+        self?.completeV2(response, result: result)
+      }
+
+    case "showOfferwallV2":
+      guard let client = requireV2Client(result) else { return }
+      do {
+        try client.presentOfferwall(from: topMostController())
+        result(nil)
+      } catch {
+        result(v2FlutterError(error))
+      }
+
+    case "showRewardedVideoV2":
+      guard let client = requireV2Client(result),
+            let args = call.arguments as? [String: Any],
+            let adSlotId = args["adSlotId"] as? String,
+            !adSlotId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        if v2Client?.session != nil {
+          result(FlutterError(code: "invalid_args", message: "adSlotId is required", details: nil))
+        }
+        return
+      }
+      do {
+        try client.presentRewardedVideo(adSlotId: adSlotId, from: topMostController())
+        result(nil)
+      } catch {
+        result(v2FlutterError(error))
+      }
+
+    case "destroyV2":
+      v2Client?.destroy()
+      v2Client = nil
+      result(nil)
+
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -409,6 +504,58 @@ public class SwiftRapidoReachPlugin: NSObject, FlutterPlugin {
       )
     )
     return false
+  }
+
+  private func requireV2Client(_ result: FlutterResult) -> RapidoReachV2? {
+    guard let client = v2Client, client.session != nil else {
+      result(FlutterError(code: "session_required", message: "Initialize RapidReach v2 first.", details: nil))
+      return nil
+    }
+    return client
+  }
+
+  private func completeV2<T: Encodable>(_ response: Result<T, Error>, result: @escaping FlutterResult) {
+    DispatchQueue.main.async {
+      switch response {
+      case .success(let value): result(self.v2EncodedObject(value))
+      case .failure(let error): result(self.v2FlutterError(error))
+      }
+    }
+  }
+
+  private func completeV2Void(_ response: Result<Void, Error>, result: @escaping FlutterResult) {
+    DispatchQueue.main.async {
+      switch response {
+      case .success: result(nil)
+      case .failure(let error): result(self.v2FlutterError(error))
+      }
+    }
+  }
+
+  private func v2EncodedObject<T: Encodable>(_ value: T) -> Any {
+    guard let data = try? JSONEncoder().encode(value),
+          let object = try? JSONSerialization.jsonObject(with: data) else { return [:] }
+    return object
+  }
+
+  private func v2FlutterError(_ error: Error) -> FlutterError {
+    let envelope = error as? RapidoReachV2ErrorEnvelope
+    return FlutterError(
+      code: envelope?.code ?? "sdk_error",
+      message: envelope?.message ?? error.localizedDescription,
+      details: envelope.map { v2EncodedObject($0) }
+    )
+  }
+
+  private func v2EventDictionary(_ event: RapidoReachV2Event) -> [String: Any?] {
+    [
+      "type": event.type.rawValue,
+      "offerId": event.offerId,
+      "transactionId": event.transactionId,
+      "status": event.status,
+      "reward": event.reward.map { v2EncodedObject($0) },
+      "error": event.error.map { v2EncodedObject($0) },
+    ]
   }
 
   private func enableNetworkLogging(_ enabled: Bool) {

@@ -14,12 +14,9 @@ dependencies:
     sdk: flutter
 
   rapidoreach:
-    # When depending on this package from a real application you should use:
-    #   RapidoReach: ^x.y.z
-    # See https://dart.dev/tools/pub/dependencies#version-constraints
-    # The example app is bundled with the plugin so we use a path dependency on
-    # the parent directory to use the current plugin's version.
-    path: ../
+    # The example app is bundled with the plugin, so repo QA should exercise
+    # the current checkout instead of the already-published package.
+    path: ..
 
 dev_dependencies:
   flutter_test:

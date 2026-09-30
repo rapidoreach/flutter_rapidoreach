@@ -1,6 +1,7 @@
 package com.rapidoreach.RapidoReach
 
 import android.app.Activity
+import android.content.Context
 import android.net.Uri
 import androidx.annotation.NonNull
 import com.rapidoreach.rapidoreachsdk.RapidoReach
@@ -10,6 +11,18 @@ import com.rapidoreach.rapidoreachsdk.RrContentEvent
 import com.rapidoreach.rapidoreachsdk.RrContentEventType
 import com.rapidoreach.rapidoreachsdk.RrError
 import com.rapidoreach.rapidoreachsdk.RrInitOptions
+import com.rapidoreach.rapidoreachsdk.v2.RapidoReachV2Client
+import com.rapidoreach.rapidoreachsdk.v2.RrV2AttStatus
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Consent
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Environment
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Error
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Event
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Offer
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Options
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Progress
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Reward
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Session
+import com.rapidoreach.rapidoreachsdk.v2.RrV2Task
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -22,7 +35,9 @@ import org.json.JSONObject
 
 class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   private lateinit var channel: MethodChannel
+  private lateinit var applicationContext: Context
   private var activity: Activity? = null
+  private var v2Client: RapidoReachV2Client? = null
 
   private var networkLoggingEnabled: Boolean = false
   private var configuredApiKey: String? = null
@@ -36,6 +51,7 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   private var apiEndpoint: String? = null
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    applicationContext = flutterPluginBinding.applicationContext
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "rapidoreach")
     channel.setMethodCallHandler(this)
   }
@@ -84,6 +100,14 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         "fetchQuickQuestions" -> fetchQuickQuestions(call, result)
         "hasQuickQuestions" -> hasQuickQuestions(call, result)
         "answerQuickQuestion" -> answerQuickQuestion(call, result)
+        "initializeV2" -> initializeV2(call, result)
+        "refreshSessionV2" -> refreshSessionV2(result)
+        "revokeSessionV2" -> revokeSessionV2(result)
+        "getOffersV2" -> getOffersV2(call, result)
+        "getRewardStatusV2" -> getRewardStatusV2(call, result)
+        "showOfferwallV2" -> showOfferwallV2(result)
+        "showRewardedVideoV2" -> showRewardedVideoV2(call, result)
+        "destroyV2" -> destroyV2(result)
         else -> result.notImplemented()
       }
     } catch (t: Throwable) {
@@ -653,6 +677,219 @@ class RapidoReachPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
       RrContentEventType.DISMISSED -> sendEvent("onRewardCenterClosed", 0)
     }
   }
+
+  private fun initializeV2(call: MethodCall, result: Result) {
+    val placementId = call.argument<String>("placementId")?.trim().orEmpty()
+    val externalUserId = call.argument<String>("externalUserId")?.trim().orEmpty()
+    if (placementId.isEmpty() || externalUserId.isEmpty()) {
+      result.error("invalid_args", "placementId and externalUserId are required", null)
+      return
+    }
+    val client = RapidoReachV2Client(
+      applicationContext,
+      apiEndpoint?.takeIf { it.isNotBlank() } ?: "https://rorapps.rapidoreach.com"
+    )
+    client.setListener { event -> sendEvent("rapidoreachV2Event", event.toMap()) }
+    v2Client?.destroy()
+    v2Client = client
+    val options = RrV2Options(
+      environment = enumValueOf((call.argument<String>("environment") ?: "production").uppercase()),
+      language = call.argument("language"),
+      consent = enumValueOf((call.argument<String>("consent") ?: "UNKNOWN").uppercase()),
+      attStatus = enumValueOf((call.argument<String>("attStatus") ?: "NOT_APPLICABLE").uppercase()),
+      adSlotId = call.argument("adSlotId"),
+    )
+    client.initialize(placementId, externalUserId, options) { outcome ->
+      completeV2(result, outcome) { it.toMap() }
+    }
+  }
+
+  private fun refreshSessionV2(result: Result) {
+    val client = requireV2Client(result) ?: return
+    client.refreshSession { outcome -> completeV2(result, outcome) { it.toMap() } }
+  }
+
+  private fun revokeSessionV2(result: Result) {
+    val client = requireV2Client(result) ?: return
+    client.revokeSession { outcome -> completeV2(result, outcome) { null } }
+  }
+
+  private fun getOffersV2(call: MethodCall, result: Result) {
+    val client = requireV2Client(result) ?: return
+    val adSlotId = call.argument<String>("adSlotId")?.trim().orEmpty()
+    if (adSlotId.isEmpty()) {
+      result.error("invalid_args", "adSlotId is required", null)
+      return
+    }
+    client.getOffers(adSlotId, call.argument("cursor")) { outcome ->
+      completeV2(result, outcome) { page ->
+        mapOf(
+          "items" to page.items.map { it.toMap() },
+          "nextCursor" to page.nextCursor,
+          "generatedAt" to page.generatedAt,
+          "expiresAt" to page.expiresAt,
+          "contractVersion" to page.contractVersion,
+        )
+      }
+    }
+  }
+
+  private fun getRewardStatusV2(call: MethodCall, result: Result) {
+    val client = requireV2Client(result) ?: return
+    val offerId = call.argument<String>("offerId")?.trim().orEmpty()
+    if (offerId.isEmpty()) {
+      result.error("invalid_args", "offerId is required", null)
+      return
+    }
+    client.getRewardStatus(offerId) { outcome ->
+      completeV2(result, outcome) {
+        mapOf(
+          "offerId" to it.offerId,
+          "progress" to it.progress.toMap(),
+          "supportEligible" to it.supportEligible,
+          "updatedAt" to it.updatedAt,
+        )
+      }
+    }
+  }
+
+  private fun showOfferwallV2(result: Result) {
+    val client = requireV2Client(result) ?: return
+    val currentActivity = requireActivity(result, "showOfferwallV2") ?: return
+    try {
+      client.showOfferwall(currentActivity)
+      result.success(null)
+    } catch (error: Throwable) {
+      result.error((error as? RrV2Error)?.code ?: "show_failed", error.message, null)
+    }
+  }
+
+  private fun showRewardedVideoV2(call: MethodCall, result: Result) {
+    val client = requireV2Client(result) ?: return
+    val currentActivity = requireActivity(result, "showRewardedVideoV2") ?: return
+    val adSlotId = call.argument<String>("adSlotId")?.trim().orEmpty()
+    if (adSlotId.isEmpty()) {
+      result.error("invalid_args", "adSlotId is required", null)
+      return
+    }
+    try {
+      client.showRewardedVideo(currentActivity, adSlotId)
+      result.success(null)
+    } catch (error: Throwable) {
+      result.error((error as? RrV2Error)?.code ?: "show_failed", error.message, null)
+    }
+  }
+
+  private fun destroyV2(result: Result) {
+    v2Client?.destroy()
+    v2Client = null
+    result.success(null)
+  }
+
+  private fun requireV2Client(result: Result): RapidoReachV2Client? {
+    val client = v2Client
+    if (client == null || client.getSession() == null) {
+      result.error("session_required", "Initialize RapidReach v2 first.", null)
+      return null
+    }
+    return client
+  }
+
+  private fun <T> completeV2(result: Result, outcome: kotlin.Result<T>, map: (T) -> Any?) {
+    activity?.runOnUiThread {
+      outcome.fold(
+        onSuccess = { result.success(map(it)) },
+        onFailure = { error ->
+          result.error((error as? RrV2Error)?.code ?: "sdk_error", error.message, null)
+        },
+      )
+    } ?: outcome.fold(
+      onSuccess = { result.success(map(it)) },
+      onFailure = { error -> result.error((error as? RrV2Error)?.code ?: "sdk_error", error.message, null) },
+    )
+  }
+
+  private fun RrV2Reward.toMap() = mapOf(
+    "minorUnits" to minorUnits,
+    "currency" to currency,
+    "decimals" to decimals,
+  )
+
+  private fun RrV2Task.toMap() = mapOf(
+    "goalId" to goalId,
+    "title" to title,
+    "state" to state,
+    "required" to required,
+    "reward" to reward.toMap(),
+  )
+
+  private fun RrV2Progress.toMap() = mapOf(
+    "state" to state,
+    "tasks" to tasks.map { it.toMap() },
+    "pending" to pending.toMap(),
+    "earned" to earned.toMap(),
+    "reversed" to reversed.toMap(),
+    "updatedAt" to updatedAt,
+  )
+
+  private fun RrV2Offer.toMap() = mapOf(
+    "offerId" to offerId,
+    "campaignId" to campaignId,
+    "revisionId" to revisionId,
+    "title" to title,
+    "description" to description,
+    "tasks" to tasks.map { it.toMap() },
+    "totalReward" to totalReward.toMap(),
+    "progress" to progress.toMap(),
+    "expiresAt" to expiresAt,
+  )
+
+  private fun RrV2Session.toMap() = mapOf(
+    "sessionId" to sessionId,
+    "token" to token,
+    "issuedAt" to issuedAt,
+    "expiresAt" to expiresAt,
+    "contractVersion" to contractVersion,
+    "minimumSdkVersion" to minimumSdkVersion,
+    "recommendedSdkVersion" to recommendedSdkVersion,
+    "capabilities" to mapOf(
+      "offerwall" to capabilities.offerwall,
+      "offerApi" to capabilities.offerApi,
+      "rewardStatus" to capabilities.rewardStatus,
+      "surveywall" to capabilities.surveywall,
+      "rewardedVideo" to capabilities.rewardedVideo,
+    ),
+    "hostedOfferwallUrl" to hostedOfferwallUrl,
+    "hostedRewardedVideoUrl" to hostedRewardedVideoUrl,
+    "adSlots" to adSlots.map {
+      mapOf(
+        "adSlotId" to it.adSlotId,
+        "name" to it.name,
+        "type" to it.type,
+        "available" to it.available,
+        "unavailableReason" to it.unavailableReason,
+      )
+    },
+  )
+
+  private fun RrV2Event.toMap() = mapOf(
+    "type" to type.name.lowercase().split('_').let { parts ->
+      parts.first() + parts.drop(1).joinToString("") { value -> value.replaceFirstChar(Char::uppercase) }
+    },
+    "offerId" to offerId,
+    "transactionId" to transactionId,
+    "status" to status,
+    "reward" to reward?.toMap(),
+    "error" to error?.let {
+      mapOf(
+        "code" to it.code,
+        "message" to it.message,
+        "retryable" to it.retryable,
+        "retryAfterSeconds" to it.retryAfterSeconds,
+        "traceId" to it.traceId,
+      )
+    },
+  )
 
   private fun sendEvent(method: String, args: Any?) {
     activity?.runOnUiThread {
