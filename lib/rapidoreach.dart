@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'rapidoreach_v2.dart';
+
+export 'rapidoreach_v2.dart';
 
 typedef OnRewardListener = void Function(int? quantity);
 typedef SurveyAvailableListener = void Function(int? survey);
@@ -249,6 +252,15 @@ class RapidoReach {
         safe('rapidoreachNetworkLog', () {
           if (payload is Map) {
             _networkLogListener?.call(Map<String, dynamic>.from(payload));
+          }
+        });
+        break;
+
+      case "rapidoreachV2Event":
+        final payload = call.arguments;
+        safe('rapidoreachV2Event', () {
+          if (payload is Map) {
+            RapidoReachV2.dispatchPlatformEvent(payload);
           }
         });
         break;

@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'rapidoreach'
-  s.version          = '1.1.2'
+  s.version          = '2.0.0'
   s.summary          = 'Monetize your users through rewarded surveys!'
   s.description      = <<-DESC
   Monetize your users through rewarded surveys.
@@ -13,8 +13,9 @@ Pod::Spec.new do |s|
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'RapidoReach' => 'info@rapidoreach.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'Classes/SwiftRapidoReachPlugin.swift', 'Classes/RapidoReachPlugin.{h,m}'
   s.dependency 'Flutter'
+  s.dependency 'RapidoReachNative', '2.0.0'
   s.frameworks = 'UIKit', 'WebKit', 'AdSupport', 'CoreTelephony'
   s.platform = :ios, '12.0'
 
